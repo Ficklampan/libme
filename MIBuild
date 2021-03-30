@@ -1,0 +1,22 @@
+CC ?= LLVM
+
+project: {
+  name "libme"
+  description "A library made for Makeit and the MurderEngine"
+  version "2020"
+  exec libme
+  lang CXX
+  kind STATIC_LIBRARY
+  cc $CC
+}
+
+cflags = [ "-g" "-Wall" "-Wextra" "-std=c++20" ]
+sources = [
+  "$(DIR)/src/memory.cpp"
+  "$(DIR)/src/filesystem.cpp"
+]
+
+include_directory: $cflags, [ "$(DIR)/include/libme" ]
+
+cflags: CXX, $cflags
+files: $sources
