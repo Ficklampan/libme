@@ -21,12 +21,13 @@ namespace me {
     typedef T* _String;
     typedef const T* _Const_String;
 
-    static constexpr T nullchar = 0;
-
     _Iterator _begin; /* first character */
     _Iterator _end; /* last character + 1 */
 
   public:
+
+    static constexpr T nullchar = 0;
+    static constexpr T npos = ~0;
 
     _string_view_t(_Const_String _string, _Size _length);
     _string_view_t(_Iterator _begin, _Iterator _end);
@@ -40,16 +41,7 @@ namespace me {
     [[nodiscard]] _Iterator begin() const;
     [[nodiscard]] _Iterator end() const;
 
-    [[nodiscard]] int8_t to_int8(_Size _off = 0, uint8_t _base = 10) const;
-    [[nodiscard]] int16_t to_int16(_Size _off = 0, uint8_t _base = 10) const;
-    [[nodiscard]] int32_t to_int32(_Size _off = 0, uint8_t _base = 10) const;
-    [[nodiscard]] int64_t to_int64(_Size _off = 0, uint8_t _base = 10) const;
-    [[nodiscard]] uint8_t to_uint8(_Size _off = 0, uint8_t _base = 10) const;
-    [[nodiscard]] uint16_t to_uint16(_Size _off = 0, uint8_t _base = 10) const;
-    [[nodiscard]] uint32_t to_uint32(_Size _off = 0, uint8_t _base = 10) const;
-    [[nodiscard]] uint64_t to_uint64(_Size _off = 0, uint8_t _base = 10) const;
-    [[nodiscard]] float to_float(_Size _off = 0) const;
-    [[nodiscard]] double to_double(_Size _off = 0) const;
+    template<typename I> [[nodiscard]] I as_int(_Size _off = 0, int _base = 10) const;
     void split(_Char _delimiter, _Size &_len, _string_view_t<T>* _strs) const;
 
     [[nodiscard]] _Char at(_Size _pos) const;
@@ -62,6 +54,7 @@ namespace me {
     [[nodiscard]] _string_view_t substr(_Size _begin) const;
     void copy(_Size _off, _Size _len, _String _dst) const;
 
+    _String c_str(_String _str, _Size _off) const;
     _String c_str(_String _str) const;
     [[nodiscard]] _Size size() const;
     [[nodiscard]] bool is_empty() const;
@@ -143,63 +136,10 @@ const T* me::_string_view_t<T>::end() const
 }
 
 template<typename T>
-me::int8_t me::_string_view_t<T>::to_int8(_Size _off, uint8_t _base) const
+template<typename I>
+I me::_string_view_t<T>::as_int(_Size _off, int _base) const
 {
-  return strint8(this->_begin + _off, _base);
-}
-
-template<typename T>
-me::int16_t me::_string_view_t<T>::to_int16(_Size _off, uint8_t _base) const
-{
-  return strint16(this->_begin + _off, _base);
-}
-
-template<typename T>
-me::int32_t me::_string_view_t<T>::to_int32(_Size _off, uint8_t _base) const
-{
-  return strint32(this->_begin + _off, _base);
-}
-
-template<typename T>
-me::int64_t me::_string_view_t<T>::to_int64(_Size _off, uint8_t _base) const
-{
-  return strint64(this->_begin + _off, _base);
-}
-
-template<typename T>
-me::uint8_t me::_string_view_t<T>::to_uint8(_Size _off, uint8_t _base) const
-{
-  return struint8(this->_begin + _off, _base);
-}
-
-template<typename T>
-me::uint16_t me::_string_view_t<T>::to_uint16(_Size _off, uint8_t _base) const
-{
-  return struint16(this->_begin + _off, _base);
-}
-
-template<typename T>
-me::uint32_t me::_string_view_t<T>::to_uint32(_Size _off, uint8_t _base) const
-{
-  return struint32(this->_begin + _off, _base);
-}
-
-template<typename T>
-me::uint64_t me::_string_view_t<T>::to_uint64(_Size _off, uint8_t _base) const
-{
-  return struint64(this->_begin + _off, _base);
-}
-
-template<typename T>
-float me::_string_view_t<T>::to_float(_Size _off) const
-{
-  return strfloat(this->_begin + _off);
-}
-
-template<typename T>
-double me::_string_view_t<T>::to_double(_Size _off) const
-{
-  return strdouble(this->_begin + _off);
+  return strint<I>(this->_begin + _off, this->size(), _base);
 }
 
 template<typename T>
@@ -326,6 +266,18 @@ void me::_string_view_t<T>::copy(_Size _off, _Size _len, _String _dest) const
 {
   for (_Size i = 0; i < _len; i++)
     _dest[i] = this->_begin[i + _off];
+}
+
+template<typename T>
+T* me::_string_view_t<T>::c_str(_String _str, _Size _off) const
+{
+  _Size _len = this->size() - _off;
+
+  for (_Size i = 0; i < _len; i++)
+    _str[i] = this->_begin[i + _off];
+
+  _str[_len] = nullchar;
+  return _str;
 }
 
 template<typename T>

@@ -1,6 +1,8 @@
 #ifndef LIBME_STRING_TYPE_HPP
   #define LIBME_STRING_TYPE_HPP
 
+#define LIBME_STRING_VALIDATE 1
+
 #include "../type.hpp"
 #include "../allocator.hpp"
 #include "../memory.hpp"
@@ -26,14 +28,15 @@ namespace me {
     typedef T* _String;
     typedef const T* _Const_String;
 
-    static constexpr T nullchar = 0;
-
     _Iterator _begin; // pointer to the first character
     _Iterator _end; // pointer to the nullchar
     _Iterator _capacity;
     _Alloc_Type* _alloc;
   
   public:
+
+    static constexpr T nullchar = 0;
+    static constexpr T npos = ~0;
   
     _string_t(_Const_String _string, _Size _length, _Alloc_Type* _alloc = allocator::_default());
     _string_t(_Char _char, _Size _length, _Alloc_Type* _alloc = allocator::_default());
@@ -47,13 +50,15 @@ namespace me {
     [[nodiscard]] _Iterator data() const;
     [[nodiscard]] _Iterator begin() const;
     [[nodiscard]] _Iterator end() const;
+    [[nodiscard]] _Const_Iterator cbegin() const;
+    [[nodiscard]] _Const_Iterator cend() const;
     void reserve(_Size _capacity);
  
     //void assign(const _string_view_t<T> &_str);
-    _string_t& insert(_Iterator _pos, const _string_view_t<T> &_str);
+    _string_t& insert(_Size _pos, const _string_view_t<T> &_str);
     _string_t& append(const _string_view_t<T> &_str);
     _string_t& append(_Char _chr);
-    _string_t& fappend(_Const_String _format, ...);
+    _string_t& push_back(_Char _chr);
     _Char pop_back();
     void erase(_Iterator _first, _Iterator _last);
     void erase(_Iterator _pos);
@@ -62,16 +67,7 @@ namespace me {
     void to_lowercase(_Iterator _begin, _Iterator _end);
     void to_uppercase(_Iterator _begin, _Iterator _end);
 
-    [[nodiscard]] int8_t to_int8(_Size _off = 0, uint8_t _base = 10) const;
-    [[nodiscard]] int16_t to_int16(_Size _off = 0, uint8_t _base = 10) const;
-    [[nodiscard]] int32_t to_int32(_Size _off = 0, uint8_t _base = 10) const;
-    [[nodiscard]] int64_t to_int64(_Size _off = 0, uint8_t _base = 10) const;
-    [[nodiscard]] uint8_t to_uint8(_Size _off = 0, uint8_t _base = 10) const;
-    [[nodiscard]] uint16_t to_uint16(_Size _off = 0, uint8_t _base = 10) const;
-    [[nodiscard]] uint32_t to_uint32(_Size _off = 0, uint8_t _base = 10) const;
-    [[nodiscard]] uint64_t to_uint64(_Size _off = 0, uint8_t _base = 10) const;
-    [[nodiscard]] float to_float(_Size _off = 0) const;
-    [[nodiscard]] double to_double(_Size _off = 0) const;
+    template<typename I> [[nodiscard]] I as_int(_Size _off = 0, uint8_t _base = 10) const;
     void split(_Char _delimiter, _Size &_len, _string_view_t<T>* _strs) const;
 
     [[nodiscard]] _Char& at(_Size _pos) const;
@@ -93,6 +89,7 @@ namespace me {
 
     [[nodiscard]] const _Char& operator[](_Size _pos) const;
 
+    [[nodiscard]] bool operator==(const _string_t &_str) const;
     [[nodiscard]] bool operator==(const _string_view_t<T> &_str) const;
     [[nodiscard]] bool operator==(const _String _str) const;
   
@@ -122,7 +119,7 @@ me::_string_t<T>::_string_t(_Const_String _string, _Size _length, _Alloc_Type* _
 {
   _Const_Iterator _iter = _string;
 
-  this->_begin = (_Iterator) _alloc->malloc(_length * sizeof(_Char));
+  this->_begin = (_Iterator) _alloc->malloc((_length * sizeof(_Char)) + sizeof(_Char));
   this->_end = this->_begin + _length;
   this->_capacity = this->_end;
   for (_Iterator i = this->_begin; i != this->_end; i++)
@@ -134,7 +131,7 @@ template<typename T>
 me::_string_t<T>::_string_t(_Char _char, _Size _length, _Alloc_Type* _alloc)
   : _alloc(_alloc)
 {
-  this->_begin = (_Iterator) _alloc->malloc(_length * sizeof(_Char));
+  this->_begin = (_Iterator) _alloc->malloc((_length * sizeof(_Char)) + sizeof(_Char));
   this->_end = this->_begin + _length;
   this->_capacity = this->_end;
   for (_Iterator i = this->_begin; i != this->_end; i++)
@@ -150,7 +147,7 @@ me::_string_t<T>::_string_t(_Const_String _string, _Alloc_Type* _alloc)
 
   _Const_Iterator _iter = _string;
 
-  this->_begin = (_Iterator) _alloc->malloc(_length * sizeof(_Char));
+  this->_begin = (_Iterator) _alloc->malloc((_length * sizeof(_Char)) + sizeof(_Char));
   this->_end = this->_begin + _length;
   this->_capacity = this->_end;
   for (_Iterator i = this->_begin; i != this->_end; i++)
@@ -164,7 +161,7 @@ me::_string_t<T>::_string_t(const _string_view_t<T> &_string, _Alloc_Type* _allo
 {
   _Const_Iterator _iter = _string.begin();
 
-  this->_begin = (_Iterator) _alloc->malloc(_string.size() * sizeof(_Char));
+  this->_begin = (_Iterator) _alloc->malloc((_string.size() * sizeof(_Char)) + sizeof(_Char));
   this->_end = this->_begin + _string.size();
   this->_capacity = this->_end;
   for (_Iterator i = this->_begin; i != this->_end; i++)
@@ -178,7 +175,7 @@ me::_string_t<T>::_string_t(const _string_t<T> &_copy)
 {
   _Const_Iterator _iter = _copy.begin();
 
-  this->_begin = (_Iterator) _alloc->malloc(_copy.size() * sizeof(_Char));
+  this->_begin = (_Iterator) _alloc->malloc((_copy.size() * sizeof(_Char)) + sizeof(_Char));
   this->_end = this->_begin + _copy.size();
   this->_capacity = this->_end;
   for (_Iterator i = this->_begin; i != this->_end; i++)
@@ -208,7 +205,14 @@ me::_string_t<T>::_string_t(_Alloc_Type* _alloc)
 template<typename T>
 me::_string_t<T>::~_string_t()
 {
-  _alloc->free(this->_begin);
+  if (this->capacity() != 0)
+  {
+#if LIBME_STRING_VALIDATE == 1
+    if (this->_begin == nullptr)
+      logf(ERROR, "me::_string_t::destroy(): freeing nullptr");
+#endif
+    _alloc->free(this->_begin);
+  }
 }
 
 template<typename T>
@@ -230,30 +234,49 @@ T* me::_string_t<T>::end() const
 }
 
 template<typename T>
+const T* me::_string_t<T>::cbegin() const
+{
+  return this->_begin;
+}
+
+template<typename T>
+const T* me::_string_t<T>::cend() const
+{
+  return this->_end;
+}
+
+template<typename T>
 void me::_string_t<T>::reserve(_Size _capacity)
 {
   if (_capacity > this->capacity())
   {
-    _Size _len = this->size();
+    _Size _count = this->size();
 
-    this->_begin = (_Iterator) _alloc->realloc(this->_begin, _capacity * sizeof(_Char));
-    this->_end = this->_begin + _len;
-    this->_capacity = this->_begin + _capacity;
+    _Iterator _begin = (_Iterator) _alloc->malloc(_capacity * sizeof(_Char));
+#if LIBME_STRING_VALIDATE == 1
+    if (_begin == nullptr)
+      logf(WARNING, "me::_string_t::reserve(%lu): me::allocator::malloc returned nullptr", _capacity);
+#endif
+    memory::uninitialized_copy<_Char>(_begin, this->_begin, this->_end);
+    _alloc->free(this->_begin);
+    this->_begin = _begin;
+    this->_end = _begin + _count;
+    this->_capacity = _begin + _capacity;
   }
 }
 
 template<typename T>
-me::_string_t<T>& me::_string_t<T>::insert(_Iterator _pos, const _string_view_t<T> &_str)
+me::_string_t<T>& me::_string_t<T>::insert(_Size _pos, const _string_view_t<T> &_str)
 {
   this->reserve(this->size() + _str.size() + 1);
 
-  memory::uninitialized_move(_pos + _str.size(), _pos, this->_end - _pos);
-
-  _Const_Iterator _iter = _str.begin();
-
-  while (_iter != _str.end())
-    *_pos++ = *_iter++;
-
+  _Iterator _src = this->_begin + _pos;
+  _Iterator _dest = this->_end + _str.size();
+  _Const_Iterator _iter = this->_end;
+  while (_iter != _src - 1)
+    *_dest-- = *_iter--;
+  for (_Size i = 0; i != _str.size(); i++)
+    _src[i] = _str.at(i);
   this->_end += _str.size();
   *this->_end = nullchar;
   return *this;
@@ -284,6 +307,16 @@ me::_string_t<T>& me::_string_t<T>::append(_Char _chr)
 }
 
 template<typename T>
+me::_string_t<T>& me::_string_t<T>::push_back(_Char _chr)
+{
+  this->reserve(this->size() + 2);
+
+  *this->_end++ = _chr;
+  *this->_end = nullchar;
+  return *this;
+}
+
+template<typename T>
 T me::_string_t<T>::pop_back()
 {
   this->_end--;
@@ -293,42 +326,26 @@ T me::_string_t<T>::pop_back()
 }
 
 template<typename T>
-me::_string_t<T>& me::_string_t<T>::fappend(_Const_String _format, ...)
-{
-  T _temp[1024];
-
-  va_list _args;
-  va_start(_args, _format);
-  vsprintf(_temp, _format, _args);
-  va_end(_args);
-
-  _Size _len = strlen(_temp);
-
-  this->reserve(this->size() + _len + 1);
-
-  _Const_Iterator _iter = _temp;
-
-  while (_iter != (_temp + _len))
-    *this->_end++ = *_iter++;
-
-  *this->_end = nullchar;
-  return *this;
-}
-
-template<typename T>
 void me::_string_t<T>::erase(_Iterator _begin, _Iterator _end)
 {
-  memory::uninitialized_move(_begin, _end + 1, (this->_end - _end));
-  this->_end -= (_end - _begin);
+#if LIBME_STRING_VALIDATE == 1
+  if (_begin < this->_begin || _end > this->_end)
+    logf(ERROR, "me::_string_t::erase(%p, %p): out of range", _begin, _end);
+#endif
+
+  _Size _len = (_end - _begin);
+  _Size _tail_len = (this->_end - _end);
+
+  while (_tail_len--)
+    *_begin++ = *_end++;
+  this->_end -= _len;
   *this->_end = nullchar;
 }
 
 template<typename T>
 void me::_string_t<T>::erase(_Iterator _pos)
 {
-  memory::uninitialized_move(_pos, _pos + 1, 1);
-  this->_end -= 1;
-  *this->_end = nullchar;
+  erase(_pos, _pos + 1);
 }
 
 template<typename T>
@@ -344,7 +361,7 @@ void me::_string_t<T>::replace(_Iterator _begin, _Iterator _end, const _string_v
   // TODO: faster?
 
   this->erase(_begin, _end);
-  this->insert(_begin, _str);
+  this->insert(_begin - this->_begin, _str);
 }
 
 template<typename T>
@@ -362,63 +379,10 @@ void me::_string_t<T>::to_uppercase(_Iterator _begin, _Iterator _end)
 }
 
 template<typename T>
-me::int8_t me::_string_t<T>::to_int8(_Size _off, uint8_t _base) const
+template<typename I>
+[[nodiscard]] I me::_string_t<T>::as_int(_Size _off, uint8_t _base) const
 {
-  return strint8(this->_begin + _off, _base);
-}
-
-template<typename T>
-me::int16_t me::_string_t<T>::to_int16(_Size _off, uint8_t _base) const
-{
-  return strint16(this->_begin + _off, _base);
-}
-
-template<typename T>
-me::int32_t me::_string_t<T>::to_int32(_Size _off, uint8_t _base) const
-{
-  return strint32(this->_begin + _off, _base);
-}
-
-template<typename T>
-me::int64_t me::_string_t<T>::to_int64(_Size _off, uint8_t _base) const
-{
-  return strint64(this->_begin + _off, _base);
-}
-
-template<typename T>
-me::uint8_t me::_string_t<T>::to_uint8(_Size _off, uint8_t _base) const
-{
-  return struint8(this->_begin + _off, _base);
-}
-
-template<typename T>
-me::uint16_t me::_string_t<T>::to_uint16(_Size _off, uint8_t _base) const
-{
-  return struint16(this->_begin + _off, _base);
-}
-
-template<typename T>
-me::uint32_t me::_string_t<T>::to_uint32(_Size _off, uint8_t _base) const
-{
-  return struint32(this->_begin + _off, _base);
-}
-
-template<typename T>
-me::uint64_t me::_string_t<T>::to_uint64(_Size _off, uint8_t _base) const
-{
-  return struint64(this->_begin + _off, _base);
-}
-
-template<typename T>
-float me::_string_t<T>::to_float(_Size _off) const
-{
-  return strfloat(this->_begin + _off);
-}
-
-template<typename T>
-double me::_string_t<T>::to_double(_Size _off) const
-{
-  return strdouble(this->_begin + _off);
+  return strint<I>(this->_begin + _off, _base);
 }
 
 template<typename T>
@@ -611,6 +575,21 @@ const T& me::_string_t<T>::operator[](_Size _pos) const
 }
 
 template<typename T>
+bool me::_string_t<T>::operator==(const _string_t &_str) const
+{
+  if (this->size() != _str.size())
+    return false;
+
+  _Const_Iterator _iter = _str.begin();
+  for (_Iterator i = this->_begin; i != this->_end; i++)
+  {
+    if (*i != *_iter++)
+      return false;
+  }
+  return true;
+}
+
+template<typename T>
 bool me::_string_t<T>::operator==(const _string_view_t<T> &_str) const
 {
   if (this->size() != _str.size())
@@ -661,10 +640,10 @@ me::_string_t<T>& me::_string_t<T>::operator=(const _string_t<T> &_str)
   _Size _len = _str.size();
   _Const_Iterator _iter = _str.begin();
 
+  this->_alloc = _str._alloc;
   this->_begin = (_Iterator) _alloc->malloc(_len * sizeof(_Char));
   this->_end = this->_begin + _len;
   this->_capacity = this->_begin + _len;
-  this->_alloc = _str._alloc;
 
   for (_Iterator i = this->_begin; i != this->_end; i++)
     *i = *_iter++;

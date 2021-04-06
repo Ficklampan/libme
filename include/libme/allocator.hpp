@@ -116,8 +116,7 @@ void me::allocator::dealloc(T* _ptr) requires std::is_trivially_destructible_v<T
 template<typename T>
 void me::allocator::dealloc(T* _ptr)
 {
-  _ptr->~T();
-
+  destruct(_ptr);
   free(_ptr);
 }
 

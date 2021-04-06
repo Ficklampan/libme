@@ -55,6 +55,8 @@ namespace me {
 
     _Value& operator[](_Key &_key);
 
+    [[nodiscard]] bool operator==(const map _map) const;
+
   };
 
 }
@@ -224,6 +226,12 @@ V& me::map<K, V>::operator[](_Key &_key)
       return _entry.second;
   }
   return this->put(_key, _Value()).second;
+}
+
+template<typename K, typename V>
+bool me::map<K, V>::operator==(const map _map) const
+{
+  return this->_entries == _map._entries;
 }
 
 #endif

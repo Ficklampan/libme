@@ -29,7 +29,7 @@ namespace me {
 
     bool operator==(const pair &_pair) const
     {
-      return first = _pair.first && second == _pair.second;
+      return first == _pair.first && second == _pair.second;
     }
 
     bool operator!=(const pair &_pair) const

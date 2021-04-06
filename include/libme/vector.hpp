@@ -174,7 +174,7 @@ constexpr me::vector<T>::vector(const vector<T> &_copy)
   this->_begin = (_Iterator) _alloc->malloc(_copy.size() * sizeof(_Type));
   this->_end = this->_begin + _copy.size();
   this->_capacity = this->_end;
-  memory::safe_copy(this->_begin, _copy._begin, _copy._end);
+  memory::safe_copy<_Type>(this->_begin, _copy._begin, _copy._end);
 }
 
 template<typename T>
@@ -195,8 +195,11 @@ constexpr me::vector<T>::vector(_Alloc_Type* _alloc)
 template<typename T>
 constexpr me::vector<T>::~vector()
 {
-  _alloc->mdealloc(this->_begin, this->_end);
-  _alloc->free(this->_begin);
+  if (this->capacity() != 0)
+  {
+    _alloc->mdealloc<_Type>(this->_begin, this->_end);
+    _alloc->free(this->_begin);
+  }
 }
 
 template<typename T>
@@ -255,7 +258,7 @@ constexpr void me::vector<T>::reserve(_Size _capacity)
     _Size _count = this->size();
 
     _Iterator _begin = (_Iterator) _alloc->malloc(_capacity * sizeof(_Type));
-    memory::safe_copy(_begin, this->_begin, this->_end);
+    memory::safe_copy<_Type>(_begin, this->_begin, this->_end);
     _alloc->free(this->_begin);
     this->_begin = _begin;
     this->_end = _begin + _count;
@@ -294,7 +297,7 @@ constexpr void me::vector<T>::shrink_to_fit()
   if (this->capacity() > _size)
   {
     _Iterator _begin = (_Iterator) _alloc->malloc(_size * sizeof(_Type));
-    memory::safe_copy(_begin, this->_begin, this->_end);
+    memory::safe_copy<_Type>(_begin, this->_begin, this->_end);
     _alloc->free(this->_begin);
     this->_begin = _begin;
     this->_end = _begin + _size;
@@ -308,7 +311,7 @@ constexpr void me::vector<T>::insert(_Const_Iterator _pos, _Type &&_value)
   _Size _len = this->size();
 
   this->reserve(_len + 1);
-  memory::safe_move(_pos + 1, _pos, _len);
+  memory::safe_move<_Type>(_pos + 1, _pos, _len);
   ::new ((void*) _pos) _Type(_value);
   this->_end++;
 }
@@ -319,7 +322,7 @@ constexpr void me::vector<T>::insert(_Const_Iterator _pos, const _Type &_value)
   _Size _len = this->size();
 
   this->reserve(_len + 1);
-  memory::safe_move(_pos + 1, _pos, _len);
+  memory::safe_move<_Type>(_pos + 1, _pos, _len);
   ::new ((void*) _pos) _Type(_value);
   this->_end++;
 }
@@ -330,7 +333,7 @@ constexpr void me::vector<T>::insert(_Const_Iterator _pos, _Size _count, const _
   _Size _len = this->size();
 
   this->reserve(_len + _count);
-  memory::safe_move(_pos + _count, _pos, _len);
+  memory::safe_move<_Type>(_pos + _count, _pos, _len);
   for (_Size i = 0; i < _count; i++)
     ::new ((void*) (_pos + i)) _Type(_value);
   this->_end += _count;
@@ -344,7 +347,7 @@ constexpr void me::vector<T>::insert(_Const_Iterator _pos, It _begin, It _end)
   _Size _count = _end - _begin;
 
   this->reserve(_len + _count);
-  memory::safe_move(_pos + _count, _pos, _len);
+  memory::safe_move<_Type>(_pos + _count, _pos, _len);
   while (_begin != _end)
     ::new ((void*) (_pos++)) _Type(*_begin++);
   this->_end += _count;
@@ -356,7 +359,7 @@ constexpr void me::vector<T>::insert(_Const_Iterator _pos, std::initializer_list
   _Size _len = this->size();
 
   this->reserve(_len + _elements.size());
-  memory::safe_move(_pos + _elements.size(), _pos, _len);
+  memory::safe_move<_Type>(_pos + _elements.size(), _pos, _len);
   _Const_Iterator _iter = _elements.begin();
   while (_iter != _elements.end())
     ::new ((void*) (_pos++)) _Type(*_iter++);
@@ -370,7 +373,7 @@ constexpr T& me::vector<T>::emplace(_Const_Iterator _pos, A&&... _args)
   _Size _len = this->size();
 
   this->reserve(_len + 1);
-  memory::safe_move(_pos + 1, _pos, _len);
+  memory::safe_move<_Type>(_pos + 1, _pos, _len);
   T* _ptr = _alloc->construct(_pos, static_cast<A&&>(_args)...);
   this->_end++;
   return *_ptr;
@@ -414,18 +417,20 @@ constexpr T me::vector<T>::pop_back()
 template<typename T>
 constexpr void me::vector<T>::erase(_Iterator _begin, _Iterator _end)
 {
-  for (_Iterator i = _begin; i < _end; i++)
+  _Size _len = (_end - _begin);
+  _Size _tail_len = (this->_end - _end);
+
+  for (_Iterator i = _begin; i != _end; i++)
     _alloc->destruct(i);
-  memory::safe_move(_begin, _end + 1, (this->_end - _end));
-  this->_end -= (_end - _begin);
+  while (_tail_len--)
+    *_begin++ = *_end++;
+  this->_end -= _len;
 }
 
 template<typename T>
 constexpr void me::vector<T>::erase(_Iterator _pos)
 {
-  _alloc->destruct(_pos);
-  memory::safe_move(_pos, _pos + 1, 1);
-  this->_end -= 1;
+  erase(_pos, _pos + 1);
 }
 
 template<typename T>
@@ -536,7 +541,7 @@ constexpr me::vector<T>& me::vector<T>::operator=(const vector<T> &_vec)
   this->_begin = (_Iterator) _alloc->malloc(_len * sizeof(_Type));
   this->_end = this->_begin + _len;
   this->_capacity = this->_end;
-  memory::safe_copy(this->_begin, _vec._begin, _vec._end);
+  memory::safe_copy<_Type>(this->_begin, _vec._begin, _vec._end);
   return *this;
 }
 

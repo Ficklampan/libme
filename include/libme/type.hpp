@@ -12,8 +12,21 @@ namespace me {
   };
 
 
-#define MIN(a, b) (((b) < (a)) ? (b) : (a))
-#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#ifndef MIN
+  #define MIN(a, b) (((b) < (a)) ? (b) : (a))
+#endif
+
+#ifndef MAX
+  #define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#endif
+
+#ifndef isdigit
+  #define isdigit(c) ((c) >= '0' && (c) <= '9')
+#endif
+
+#ifndef SIZE_MAX
+  #define SIZE_MAX __SIZE_MAX__
+#endif
 
   typedef __UINT8_TYPE__ uint8_t;
   typedef __UINT16_TYPE__ uint16_t;
@@ -24,23 +37,22 @@ namespace me {
   typedef __INT16_TYPE__ int16_t;
   typedef __INT32_TYPE__ int32_t;
   typedef __INT64_TYPE__ int64_t;
+  typedef __INTMAX_TYPE__ intmax_t;
+  typedef __UINTMAX_TYPE__ uintmax_t;
 
   typedef int32_t int_t;
   typedef uint32_t uint_t;
 
   typedef __SIZE_TYPE__ size_t;
 
-  static constexpr size_t SIZE_MAX = __SIZE_MAX__;
-  static constexpr size_t npos = ~0;
-
-  static inline void printf(LogType _type, const char* _format, ...);
+  static inline void logf(LogType _type, const char* _format, ...);
 
 }
 
 #include <stdio.h>
 #include <stdarg.h>
 
-inline void me::printf(LogType _type, const char* _format, ...)
+inline void me::logf(LogType _type, const char* _format, ...)
 {
   switch (_type)
   {
@@ -49,7 +61,7 @@ inline void me::printf(LogType _type, const char* _format, ...)
       break;
 
     case ERROR:
-      ::printf("\e[31error:\e[0m ");
+      ::printf("\e[31merror:\e[0m ");
       break;
 
     case WARNING:
