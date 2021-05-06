@@ -3,15 +3,6 @@
 
 namespace me {
 
-  enum LogType {
-    FATAL,
-    ERROR,
-    WARNING,
-    INFO,
-    DEBUG
-  };
-
-
 #ifndef MIN
   #define MIN(a, b) (((b) < (a)) ? (b) : (a))
 #endif
@@ -22,6 +13,10 @@ namespace me {
 
 #ifndef isdigit
   #define isdigit(c) ((c) >= '0' && (c) <= '9')
+#endif
+
+#ifndef isletter
+  #define isletter(c) (((c) >= 'A' && (c) <= 'Z') || ((c) >= 'a' && (c) <= 'z'))
 #endif
 
 #ifndef SIZE_MAX
@@ -45,44 +40,6 @@ namespace me {
 
   typedef __SIZE_TYPE__ size_t;
 
-  static inline void logf(LogType _type, const char* _format, ...);
-
-}
-
-#include <stdio.h>
-#include <stdarg.h>
-
-inline void me::logf(LogType _type, const char* _format, ...)
-{
-  switch (_type)
-  {
-    case FATAL:
-      ::printf("\e[31mfatal:\e[0m ");
-      break;
-
-    case ERROR:
-      ::printf("\e[31merror:\e[0m ");
-      break;
-
-    case WARNING:
-      ::printf("\e[33mwarning:\e[0m ");
-      break;
-
-    case INFO:
-      ::printf("\e[32minfo:\e[0m ");
-      break;
-
-    case DEBUG:
-      ::printf("\e[35mdebug:\e[0m ");
-      break;
-  }
-
-  va_list _args;
-  va_start(_args, _format);
-  vprintf(_format, _args);
-  va_end(_args);
-
-  putchar('\n');
 }
 
 #endif

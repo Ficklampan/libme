@@ -4,9 +4,6 @@
 #include "type.hpp"
 #include "exception.hpp"
 
-#include "string.hpp"
-#include "vector.hpp"
-
 #include <type_traits>
 #include <typeinfo>
 
@@ -292,7 +289,9 @@ constexpr void __me::__store_args(__arg* _iter, const T &_first, const A&... _ar
   /* pointer types */
   }else if (std::is_pointer<Tr>::value)
   {
-    if (std::is_same<Tr, char*>::value)
+    typedef std::remove_pointer_t<Tr> Trp;
+
+    if (std::is_same<Trp, char>::value)
       _iter->_type = ARG_TYPE_CSTRING;
     else
       _iter->_type = ARG_TYPE_POINTER;
@@ -449,7 +448,11 @@ int __me::__string_to_integer(C* &_str)
 template<typename C, typename... A>
 constexpr int me::format(C* _buffer, const C* _format, const A&... _args)
 {
-  return __me::__format(_buffer, _format, _args...);
+  if constexpr (sizeof...(_args) > 0)
+    return __me::__format(_buffer, _format, _args...);
+  while (*_format != '\0')
+    *_buffer++ = *_format++;
+  return 0;
 }
 
 #endif

@@ -6,7 +6,7 @@ OUT = libme
 INCD = -I./include/libme
 LIBD = 
 LIBS = 
-CFLAGS = $(INCD)
+CFLAGS = -DME_DEBUG $(INCD)
 C_CFLAGS = $(CFLAGS) -xc 
 CXX_CFLAGS = $(CFLAGS) -xc++ -g -Wall -Wextra -std=c++20
 OBJC_CFLAGS = $(CFLAGS) -xobjc 

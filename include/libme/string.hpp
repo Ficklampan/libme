@@ -11,11 +11,11 @@
 
 namespace me {
 
-  typedef _string_t<char> string;
-  typedef _string_t<wchar_t> wstring;
+  typedef string_t<char> string;
+  typedef string_t<wchar_t> wstring;
 
-  typedef _string_view_t<char> string_view;
-  typedef _string_view_t<wchar_t> wstring_view;
+  typedef string_view_t<char> string_view;
+  typedef string_view_t<wchar_t> wstring_view;
 
   template<class S>
   using string_proxy = _string_proxy_t<char, S>;

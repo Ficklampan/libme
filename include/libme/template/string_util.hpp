@@ -2,51 +2,56 @@
   #define LIBME_STRING_UTIL_HPP
 
 #include "../bit.hpp"
+#include <string.h>
 
 #include <type_traits>
 
 namespace me {
 
   template<typename T>
-  class _string_t;
+  class string_t;
 
   template<typename T>
-  class _string_view_t;
+  class string_view_t;
 
-  template<typename C> [[nodiscard]] size_t strlen(const C* _str);
-  template<typename C> [[nodiscard]] int strcmp(const C* _str1, const C* _str2);
+  template<typename C> [[nodiscard]] size_t strlen(const C* str);
+  template<typename C> [[nodiscard]] int strcmp(const C* str1, const C* str2);
 
 
   // ---------- INTEGER ---------- //
 
   /* converts a string to a integer */
-  template<typename T, typename C> [[nodiscard]] T strint(const C* _str, int _base = 10) requires std::is_integral_v<T>;
-  template<typename T, typename C> [[nodiscard]] T strint(const C* _str, size_t _len, int _base = 10) requires std::is_integral_v<T>;
+  template<typename T, typename C> [[nodiscard]] T strint(const C* str, int base = 10) requires std::is_integral_v<T>;
+  template<typename T, typename C> [[nodiscard]] T strint(const C* str, size_t len, int base = 10) requires std::is_integral_v<T>;
 
   /* creates a integer string from a integer */
-  template<typename T, typename C> void intstr(T _i, C* _str, int _base = 10) requires std::is_integral_v<T>;
+  template<typename T, typename C> void intstr(T i, C* str, int base = 10) requires std::is_integral_v<T>;
 
 
   // ---------- FLOATING POINT ---------- //
 
   /* converts a string to a float */
-  template<typename T, typename C> [[nodiscard]] T strfloat(const C* _str, int _base = 10) requires std::is_floating_point_v<T>;
-  template<typename T, typename C> [[nodiscard]] T strfloat(const C* _str, size_t _len, int _base = 10) requires std::is_floating_point_v<T>;
+  template<typename T, typename C> [[nodiscard]] T strfloat(const C* str, int base = 10) requires std::is_floating_point_v<T>;
+  template<typename T, typename C> [[nodiscard]] T strfloat(const C* str, size_t len, int base = 10) requires std::is_floating_point_v<T>;
 
   /* creates a float string from a float */
-  template<typename T, typename C> void floatstr(T _f, C* _str, int _base = 10) requires std::is_floating_point_v<T>;
+  template<typename T, typename C> void floatstr(T f, C* str, int base = 10) requires std::is_floating_point_v<T>;
 
 
   /* creates a number string from a number */
-  template<typename T, typename C> void numstr(T _n, C* _str, int _base = 10);
+  template<typename T, typename C> void numstr(T n, C* str, int base = 10);
+
+  // --------- STUFF --------- //
+  template<typename C> [[nodiscard]] constexpr C lowercase(C chr);
+  template<typename C> [[nodiscard]] constexpr C uppercase(C chr);
 
 }
 
-template<typename C> [[nodiscard]] inline me::_string_t<C> operator+(const me::_string_t<C> &_str1, const me::_string_t<C> &_str2);
-template<typename C> [[nodiscard]] inline me::_string_t<C> operator+(const C* _str1, const me::_string_t<C> &_str2);
+template<typename C> [[nodiscard]] inline me::string_t<C> operator+(const me::string_t<C> &_str1, const me::string_t<C> &_str2);
+template<typename C> [[nodiscard]] inline me::string_t<C> operator+(const C* _str1, const me::string_t<C> &_str2);
 
-[[nodiscard]] inline me::_string_t<char> operator "" _s(const char* _str, me::size_t _len);
-[[nodiscard]] inline me::_string_view_t<char> operator "" _sv(const char* _str, me::size_t len);
+[[nodiscard]] inline me::string_t<char> operator "" _s(const char* _str, me::size_t _len);
+[[nodiscard]] inline me::string_view_t<char> operator "" _sv(const char* _str, me::size_t len);
 
 #include "string.hpp"
 #include "string_view.hpp"
@@ -192,33 +197,33 @@ void me::numstr(T _n, C* _str, int _base)
 }
 
 template<typename C>
-inline me::_string_t<C> operator+(const me::_string_t<C> &_str1, const me::_string_t<C> &_str2)
+constexpr C me::lowercase(C chr)
 {
-  me::_string_t<C> _str = _str1;
-  _str.reserve(_str1.size() + _str2.size() + 1);
-  _str += _str2;
-  return _str;
+  if (chr >= 0x41 && chr <= 0x5A)
+    return chr + 0x20;
 }
 
 template<typename C>
-inline me::_string_t<C> operator+(const C* _str1, const me::_string_t<C> &_str2)
+constexpr C me::uppercase(C chr)
 {
-  me::size_t _len = me::strlen(_str1);
-
-  me::_string_t<C> _str = _str1;
-  _str.reserve(_len + _str2.size() + 1);
-  _str += _str2;
-  return _str;
+  if (chr >= 0x61 && chr <= 0x7A)
+    return chr - 0x20;
 }
 
-inline me::_string_t<char> operator "" _s(const char* _str, me::size_t _len)
+template<typename C>
+inline me::string_t<C> operator+(const me::string_t<C> &str1, const me::string_t<C> &str2)
 {
-  return me::_string_t<char>(_str, _len);
+  me::string_t<C> str = str1;
+  str += str2;
+  return str;
 }
 
-inline me::_string_view_t<char> operator "" _sv(const char* _str, me::size_t _len)
+template<typename C>
+inline me::string_t<C> operator+(const C* str1, const me::string_t<C> &str2)
 {
-  return me::_string_view_t<char>(_str, _len);
+  me::string_t<C> str = str1;
+  str += str2;
+  return str;
 }
 
 #endif

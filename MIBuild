@@ -18,5 +18,5 @@ sources = [
 
 add_include_directory: [ "$(DIR)/include/libme" ]
 
-add_cflags: [ CXX ], [ "-g" "-Wall" "-Wextra" "-std=c++20" ]
+add_cflags: [ CXX ], [ "-DME_DEBUG" "-g" "-Wall" "-Wextra" "-std=c++20" ]
 files: $sources
