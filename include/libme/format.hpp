@@ -3,7 +3,9 @@
 
 #include "type.hpp"
 #include "exception.hpp"
+#include "string.hpp"
 
+#include <cmath>
 #include <type_traits>
 #include <typeinfo>
 
@@ -23,6 +25,7 @@ namespace __me {
   };
 
   enum __arg_type : uint16_t {
+    ARG_TYPE_CHAR_ARRAY,
     ARG_TYPE_CSTRING,
     ARG_TYPE_POINTER,
 
@@ -146,8 +149,15 @@ constexpr int __me::__format(C* _buffer, const C* _format, const A&... _args)
 
     switch (_arg._type)
     {
-      /* C string type */
+      /* string */
       case ARG_TYPE_CSTRING:
+        _val_str = *reinterpret_cast<const char* const*>(_arg._ptr);
+        while (*_val_str != '\0')
+          *_buffer++ = *_val_str++;
+        break;
+
+      /* char array */
+      case ARG_TYPE_CHAR_ARRAY:
         _val_str = reinterpret_cast<const char*>(_arg._ptr);
         while (*_val_str != '\0')
           *_buffer++ = *_val_str++;
@@ -274,7 +284,7 @@ __me::__arg_type __me::__get_arg_type(const C* &_format)
 template<typename T, typename... A>
 constexpr void __me::__store_args(__arg* _iter, const T &_first, const A&... _args)
 {
-  typedef std::remove_cvref_t<T> Tr;
+  using Tr = std::remove_cvref_t<T>;
 
   _iter->_ptr = &_first;
 
@@ -284,14 +294,12 @@ constexpr void __me::__store_args(__arg* _iter, const T &_first, const A&... _ar
     typedef std::remove_extent_t<Tr> Tre;
 
     if (std::is_same<Tre, char>::value)
-      _iter->_type = ARG_TYPE_CSTRING;
+      _iter->_type = ARG_TYPE_CHAR_ARRAY;
 
   /* pointer types */
   }else if (std::is_pointer<Tr>::value)
   {
-    typedef std::remove_pointer_t<Tr> Trp;
-
-    if (std::is_same<Trp, char>::value)
+    if (std::is_same<Tr, char const*>::value)
       _iter->_type = ARG_TYPE_CSTRING;
     else
       _iter->_type = ARG_TYPE_POINTER;
@@ -350,6 +358,12 @@ void __me::__integer_to_string(T _i, C* &_str, int _flags, int _base) requires s
 {
   static const char* _CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
+  if (_i == 0)
+  {
+    *_str++ = '0';
+    return;
+  }
+
   C _temp[66];
   int _index = 0;
   bool _unsigned;
@@ -383,11 +397,19 @@ template<typename T, typename C>
 void __me::__float_to_string(T _f, C* &_str, int _flags, int _base) requires std::is_floating_point_v<T>
 {
   static const char* _CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  static const C _dec_point = '.';
+
+  if (_f == 0)
+  {
+    *_str++ = '0';
+    *_str++ = _dec_point;
+    *_str++ = '0';
+    return;
+  }
 
   long _i1 = static_cast<long>(_f);
   long _i2 = static_cast<long>(_f - static_cast<T>(_i1));
 
-  C _dec_point = '.';
   C _temp[128];
   int _index = 0;
   bool _unsigned;

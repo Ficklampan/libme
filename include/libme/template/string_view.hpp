@@ -305,7 +305,7 @@ constexpr me::size_t me::string_view_t<T>::size() const
 template<typename T>
 constexpr bool me::string_view_t<T>::is_empty() const
 {
-  return begin_ != end_;
+  return begin_ == end_;
 }
 
 template<typename T>

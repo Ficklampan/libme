@@ -1,6 +1,8 @@
 #ifndef MELIB_TYPE_HPP
   #define MELIB_TYPE_HPP
 
+#include <ctype.h>
+
 namespace me {
 
 #ifndef MIN
@@ -9,10 +11,6 @@ namespace me {
 
 #ifndef MAX
   #define MAX(a, b) (((a) > (b)) ? (a) : (b))
-#endif
-
-#ifndef isdigit
-  #define isdigit(c) ((c) >= '0' && (c) <= '9')
 #endif
 
 #ifndef isletter

@@ -429,7 +429,7 @@ constexpr T me::vector<T>::pop_back()
   if (this->is_empty())
     throw exception("me::vector::pop_back(): no elements to pop back");
   end_--;
-  return end_;
+  return *end_;
 }
 
 template<typename T>
