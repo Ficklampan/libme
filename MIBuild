@@ -12,7 +12,6 @@ project: {
 
 cflags = [ "-g" "-Wall" "-Wextra" "-std=c++20" ]
 sources = [
-  "$(DIR)/src/memory.cpp"
   "$(DIR)/src/filesystem.cpp"
 ]
 

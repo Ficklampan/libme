@@ -13,12 +13,12 @@
 
 namespace me {
 
-  template<typename T>
+  template<typename T, class A = allocator>
   class vector {
 
   protected:
 
-    typedef allocator Alloc_Type;
+    typedef A Alloc;
     typedef size_t Size;
     typedef T* Iterator;
     typedef const T* Const_Iterator;
@@ -27,23 +27,19 @@ namespace me {
     Iterator begin_;
     Iterator end_;
     Iterator capacity_;
-    Alloc_Type* alloc_;
     
   public:
 
-    [[deprecated]] constexpr vector(Iterator begin, Iterator end, Iterator capacity, Alloc_Type* alloc = allocator::_default());
-    constexpr vector(Iterator begin, Size lengh, Size _capacity, Alloc_Type* alloc = allocator::_default());
-    constexpr vector(Iterator begin, Size lengh, Alloc_Type* alloc = allocator::_default());
-    constexpr vector(Type &value, Size _length, Alloc_Type* alloc = allocator::_default());
-    constexpr vector(std::initializer_list<T> elements, Alloc_Type* alloc = allocator::_default());
-    constexpr vector(Size length, Alloc_Type* alloc = allocator::_default());
-    constexpr vector(const vector &copy);
-    constexpr vector(vector &&move);
-    constexpr vector(Alloc_Type* alloc = allocator::_default());
-
+    [[deprecated]] constexpr vector(Iterator begin, Iterator end, Iterator capacity);
+    constexpr vector(Iterator begin, Size lengh, Size _capacity);
+    constexpr vector(Iterator begin, Size lengh);
+    constexpr vector(Type &value, Size _length);
+    constexpr vector(std::initializer_list<T> elements);
+    constexpr vector(Size length);
+    constexpr vector(const vector<T, A> &copy);
+    constexpr vector(vector<T, A> &&move);
+    constexpr vector();
     constexpr ~vector();
-
-    [[nodiscard]] constexpr Alloc_Type* get_allocator() const;
 
     [[nodiscard]] constexpr Iterator data() const;
 
@@ -66,12 +62,12 @@ namespace me {
     constexpr void insert(Const_Iterator pos, Size count, const Type &value);
     template<typename It> constexpr void insert(Const_Iterator pos, It first, It last);
     constexpr void insert(Const_Iterator pos, std::initializer_list<T> &elements);
-    template<typename... A> constexpr Type& emplace(Const_Iterator pos, A&&... args);
+    template<typename... Args> constexpr Type& emplace(Const_Iterator pos, Args&&... args);
     constexpr void push_back(Type&& value);
     constexpr void push_back(const Type &value);
     constexpr void push_back_vector(vector &&value);
     constexpr void push_back_vector(const vector &value);
-    template<typename... A> constexpr Type& emplace_back(A&&... args);
+    template<typename... Args> constexpr Type& emplace_back(Args&&... args);
     
     constexpr Type pop_back();
     constexpr void erase(Iterator begin, Iterator end);
@@ -91,185 +87,174 @@ namespace me {
     [[nodiscard]] constexpr Type& operator[](Size pos);
     [[nodiscard]] constexpr const Type& operator[](Size pos) const;
     
-    [[nodiscard]] constexpr bool operator==(const vector &vec) const;
-    [[nodiscard]] constexpr bool operator!=(const vector &vec) const;
+    template<class A2> [[nodiscard]] constexpr bool operator==(const vector<T, A2> &vec) const;
+    template<class A2> [[nodiscard]] constexpr bool operator!=(const vector<T, A2> &vec) const;
 
-    constexpr vector& operator=(const vector &vec);
-    constexpr vector& operator=(vector &&vec);
+    constexpr vector& operator=(const vector<T, A> &vec);
+    constexpr vector& operator=(vector<T, A> &&vec);
     constexpr vector& operator=(std::initializer_list<T> elements);
 
   };
 
 }
 
-template<typename T>
-constexpr me::vector<T>::vector(Iterator begin, Iterator end, Iterator capacity, Alloc_Type* alloc)
-  : begin_(begin), end_(end), capacity_(capacity), alloc_(alloc)
+template<typename T, class A>
+constexpr me::vector<T, A>::vector(Iterator begin, Iterator end, Iterator capacity)
+  : begin_(begin), end_(end), capacity_(capacity)
 {
 }
 
-template<typename T>
-constexpr me::vector<T>::vector(Iterator begin, Size length, Size capacity, Alloc_Type* alloc)
-  : alloc_(alloc)
+template<typename T, class A>
+constexpr me::vector<T, A>::vector(Iterator begin, Size length, Size capacity)
 {
   Iterator iter = begin;
 
-  begin_ = (Iterator) alloc->malloc(capacity);
+  begin_ = Alloc::template malloc<Type>(capacity);
   end_ = begin_ + length;
   capacity_ = capacity;
   for (Iterator i = begin_; i != end_; i++)
     ::new ((void*) i) Type(*iter++);
 }
 
-template<typename T>
-constexpr me::vector<T>::vector(Iterator begin, Size length, Alloc_Type* alloc)
-  : alloc_(alloc)
+template<typename T, class A>
+constexpr me::vector<T, A>::vector(Iterator begin, Size length)
 {
   Iterator iter = begin;
 
-  begin_ = (Iterator) alloc_->malloc(length * sizeof(Type));
+  begin_ = Alloc::template malloc<Type>(length);
   end_ = begin_ + length;
   capacity_ = end_;
   for (Iterator i = begin_; i != end_; i++)
     ::new ((void*) i) Type(*iter++);
 }
 
-template<typename T>
-constexpr me::vector<T>::vector(Type &value, Size length, Alloc_Type* alloc)
-  : alloc_(alloc)
+template<typename T, class A>
+constexpr me::vector<T, A>::vector(Type &value, Size length)
 {
-  begin_ = (Iterator) alloc_->malloc(length * sizeof(Type));
+  begin_ = Alloc::template malloc<Type>(length);
   end_ = begin_ + length;
   capacity_ = end_;
   for (Iterator i = begin_; i != end_; i++)
-    *i = value;
+    ::new ((void*) i) Type(value);
 }
 
-template<typename T>
-constexpr me::vector<T>::vector(std::initializer_list<Type> elements, Alloc_Type* alloc)
-  : alloc_(alloc)
+template<typename T, class A>
+constexpr me::vector<T, A>::vector(std::initializer_list<Type> elements)
 {
   Const_Iterator iter = elements.begin();
 
-  begin_ = (Iterator) alloc_->malloc(elements.size() * sizeof(Type));
+  begin_ = Alloc::template malloc<Type>(elements.size());
   end_ = begin_ + elements.size();
   capacity_ = end_;
   for (Iterator i = begin_; i != end_; i++)
-    *i = *iter++;
+    ::new ((void*) i) Type(*iter++);
 }
 
-template<typename T>
-constexpr me::vector<T>::vector(Size length, Alloc_Type* alloc)
-  : alloc_(alloc)
+template<typename T, class A>
+constexpr me::vector<T, A>::vector(Size length)
 {
-  begin_ = (Iterator) alloc_->malloc(length * sizeof(Type));
+  begin_ = Alloc::template malloc<Type>(length);
   end_ = begin_ + length;
   capacity_ = end_;
   for (Iterator i = begin_; i != end_; i++)
     *i = Type();
 }
 
-template<typename T>
-constexpr me::vector<T>::vector(const vector<T> &copy)
-  : alloc_(copy.alloc_)
+template<typename T, class A>
+constexpr me::vector<T, A>::vector(const vector<T, A> &copy)
 {
-  begin_ = (Iterator) alloc_->malloc(copy.size() * sizeof(Type));
+  begin_ = Alloc::template malloc<Type>(copy.size());
   end_ = begin_ + copy.size();
   capacity_ = end_;
   memory::safe_copy<Type>(begin_, copy.begin_, copy.end_);
 }
 
-template<typename T>
-constexpr me::vector<T>::vector(vector<T> &&move)
+template<typename T, class A>
+constexpr me::vector<T, A>::vector(vector<T, A> &&move)
 {
-  begin_ = static_cast<vector<T>&&>(move).begin_;
-  end_ = static_cast<vector<T>&&>(move).end_;
-  capacity_ = static_cast<vector<T>&&>(move).capacity_;
-  alloc_ = static_cast<vector<T>&&>(move).alloc_;
+  begin_ = static_cast<vector<T, A>&&>(move).begin_;
+  end_ = static_cast<vector<T, A>&&>(move).end_;
+  capacity_ = static_cast<vector<T, A>&&>(move).capacity_;
 }
 
-template<typename T>
-constexpr me::vector<T>::vector(Alloc_Type* alloc)
-  : begin_(nullptr), end_(nullptr), capacity_(nullptr), alloc_(alloc)
+template<typename T, class A>
+constexpr me::vector<T, A>::vector()
+  : begin_(nullptr), end_(nullptr), capacity_(nullptr)
 {
 }
 
-template<typename T>
-constexpr me::vector<T>::~vector()
+template<typename T, class A>
+constexpr me::vector<T, A>::~vector()
 {
   if (capacity() != 0)
   {
-    alloc_->mdealloc<Type>(begin_, end_);
-    alloc_->free(begin_);
+    Iterator iter = begin_;
+    while (iter != end_)
+      Alloc::template destruct<Type>(iter++);
+    Alloc::free(begin_);
   }
 }
 
-template<typename T>
-constexpr me::allocator* me::vector<T>::get_allocator() const
-{
-  return alloc_;
-}
-
-template<typename T>
-constexpr T* me::vector<T>::data() const
+template<typename T, class A>
+constexpr T* me::vector<T, A>::data() const
 {
   return begin_;
 }
 
-template<typename T>
-constexpr T* me::vector<T>::begin() const
+template<typename T, class A>
+constexpr T* me::vector<T, A>::begin() const
 {
   return begin_;
 }
 
-template<typename T>
-constexpr T* me::vector<T>::end() const
+template<typename T, class A>
+constexpr T* me::vector<T, A>::end() const
 {
   return end_;
 }
 
-template<typename T>
-constexpr const T* me::vector<T>::cbegin() const
+template<typename T, class A>
+constexpr const T* me::vector<T, A>::cbegin() const
 {
   return begin_;
 }
 
-template<typename T>
-constexpr const T* me::vector<T>::cend() const
+template<typename T, class A>
+constexpr const T* me::vector<T, A>::cend() const
 {
   return end_;
 }
 
-template<typename T>
-constexpr T& me::vector<T>::front() const
+template<typename T, class A>
+constexpr T& me::vector<T, A>::front() const
 {
   return begin_[0];
 }
 
-template<typename T>
-constexpr T& me::vector<T>::back() const
+template<typename T, class A>
+constexpr T& me::vector<T, A>::back() const
 {
   return *(end_ - 1);
 }
 
-template<typename T>
-constexpr void me::vector<T>::reserve(Size capacity)
+template<typename T, class A>
+constexpr void me::vector<T, A>::reserve(Size capacity)
 {
   if (capacity > this->capacity())
   {
     Size count = this->size();
 
-    Iterator begin = (Iterator) alloc_->malloc(capacity * sizeof(Type));
+    Iterator begin = (Iterator) Alloc::template malloc<Type>(capacity);
     memory::safe_copy<Type>(begin, begin_, end_);
-    alloc_->free(begin_);
+    Alloc::free(begin_);
     begin_ = begin;
     end_ = begin + count;
     capacity_ = begin + capacity;
   }
 }
 
-template<typename T>
-constexpr void me::vector<T>::resize(Size len, Type &value)
+template<typename T, class A>
+constexpr void me::vector<T, A>::resize(Size len, Type &value)
 {
   this->reserve(len);
 
@@ -280,8 +265,8 @@ constexpr void me::vector<T>::resize(Size len, Type &value)
     *i = value;
 }
 
-template<typename T>
-constexpr void me::vector<T>::resize(Size len)
+template<typename T, class A>
+constexpr void me::vector<T, A>::resize(Size len)
 {
   this->reserve(len);
 
@@ -291,24 +276,24 @@ constexpr void me::vector<T>::resize(Size len)
     *i = Type();
 }
 
-template<typename T>
-constexpr void me::vector<T>::shrink_to_fit()
+template<typename T, class A>
+constexpr void me::vector<T, A>::shrink_to_fit()
 {
   Size size = this->size();
 
   if (this->capacity() > size)
   {
-    Iterator begin = (Iterator) alloc_->malloc(size * sizeof(Type));
+    Iterator begin = (Iterator) Alloc::template malloc<Type>(size * sizeof(Type));
     memory::safe_copy<Type>(begin, begin_, end_);
-    alloc_->free(begin_);
+    Alloc::free(begin_);
     begin_ = begin;
     end_ = begin + size;
     capacity_ = begin + size;
   }
 }
 
-template<typename T>
-constexpr void me::vector<T>::insert(Const_Iterator pos, Type &&value)
+template<typename T, class A>
+constexpr void me::vector<T, A>::insert(Const_Iterator pos, Type &&value)
 {
   Size len = this->size();
 
@@ -318,8 +303,8 @@ constexpr void me::vector<T>::insert(Const_Iterator pos, Type &&value)
   end_++;
 }
 
-template<typename T>
-constexpr void me::vector<T>::insert(Const_Iterator pos, const Type &value)
+template<typename T, class A>
+constexpr void me::vector<T, A>::insert(Const_Iterator pos, const Type &value)
 {
   Size len = this->size();
 
@@ -329,8 +314,8 @@ constexpr void me::vector<T>::insert(Const_Iterator pos, const Type &value)
   end_++;
 }
 
-template<typename T>
-constexpr void me::vector<T>::insert(Const_Iterator pos, Size count, const Type &value)
+template<typename T, class A>
+constexpr void me::vector<T, A>::insert(Const_Iterator pos, Size count, const Type &value)
 {
   Size len = this->size();
 
@@ -341,9 +326,9 @@ constexpr void me::vector<T>::insert(Const_Iterator pos, Size count, const Type 
   end_ += count;
 }
 
-template<typename T>
+template<typename T, class A>
 template<typename It>
-constexpr void me::vector<T>::insert(Const_Iterator pos, It begin, It end)
+constexpr void me::vector<T, A>::insert(Const_Iterator pos, It begin, It end)
 {
   Size len = this->size();
   Size count = end - begin;
@@ -355,8 +340,8 @@ constexpr void me::vector<T>::insert(Const_Iterator pos, It begin, It end)
   end_ += count;
 }
 
-template<typename T>
-constexpr void me::vector<T>::insert(Const_Iterator pos, std::initializer_list<T> &elements)
+template<typename T, class A>
+constexpr void me::vector<T, A>::insert(Const_Iterator pos, std::initializer_list<T> &elements)
 {
   Size len = this->size();
 
@@ -368,63 +353,63 @@ constexpr void me::vector<T>::insert(Const_Iterator pos, std::initializer_list<T
   end_ += elements.size();
 }
 
-template<typename T>
-template<typename... A>
-constexpr T& me::vector<T>::emplace(Const_Iterator pos, A&&... args)
+template<typename T, class A>
+template<typename... Args>
+constexpr T& me::vector<T, A>::emplace(Const_Iterator pos, Args&&... args)
 {
   Size len = this->size();
 
   this->reserve(len + 1);
   memory::safe_move<Type>(pos + 1, pos, len);
-  T* ptr = alloc_->construct(pos, static_cast<A&&>(args)...);
+  T* ptr = Alloc::construct(pos, static_cast<Args&&>(args)...);
   end_++;
   return *ptr;
 }
 
-template<typename T>
-constexpr void me::vector<T>::push_back(Type &&value)
+template<typename T, class A>
+constexpr void me::vector<T, A>::push_back(Type &&value)
 {
   this->reserve(this->size() + 1);
   ::new ((void*) end_) Type(value);
   end_++;
 }
 
-template<typename T>
-constexpr void me::vector<T>::push_back(const Type &value)
+template<typename T, class A>
+constexpr void me::vector<T, A>::push_back(const Type &value)
 {
   reserve(this->size() + 1);
   ::new ((void*) end_) Type(value);
   end_++;
 }
 
-template<typename T>
-constexpr void me::vector<T>::push_back_vector(vector &&value)
+template<typename T, class A>
+constexpr void me::vector<T, A>::push_back_vector(vector &&value)
 {
   reserve(this->size() + static_cast<vector&&>(value).size());
   for (Type &i : static_cast<vector&&>(value))
     ::new ((void*) end_++) Type(i);
 }
 
-template<typename T>
-constexpr void me::vector<T>::push_back_vector(const vector &value)
+template<typename T, class A>
+constexpr void me::vector<T, A>::push_back_vector(const vector &value)
 {
   reserve(this->size() + value.size());
   for (const Type &i : value)
     ::new ((void*) end_++) Type(i);
 }
 
-template<typename T>
-template<typename... A>
-constexpr T& me::vector<T>::emplace_back(A&&... args)
+template<typename T, class A>
+template<typename... Args>
+constexpr T& me::vector<T, A>::emplace_back(Args&&... args)
 {
   reserve(this->size() + 1);
-  T* ptr = alloc_->construct(end_, static_cast<A&&>(args)...);
+  T* ptr = Alloc::construct(end_, static_cast<Args&&>(args)...);
   end_++;
   return *ptr;
 }
 
-template<typename T>
-constexpr T me::vector<T>::pop_back()
+template<typename T, class A>
+constexpr T me::vector<T, A>::pop_back()
 {
   if (this->is_empty())
     throw exception("me::vector::pop_back(): no elements to pop back");
@@ -432,35 +417,35 @@ constexpr T me::vector<T>::pop_back()
   return *end_;
 }
 
-template<typename T>
-constexpr void me::vector<T>::erase(Iterator begin, Iterator end)
+template<typename T, class A>
+constexpr void me::vector<T, A>::erase(Iterator begin, Iterator end)
 {
   Size len = (end - begin);
   Size tail_len = (end_ - end);
 
   for (Iterator i = begin; i != end; i++)
-    alloc_->destruct(i);
+    Alloc::destruct(i);
   while (tail_len--)
     *begin++ = *end++;
   end_ -= len;
 }
 
-template<typename T>
-constexpr void me::vector<T>::erase(Iterator pos)
+template<typename T, class A>
+constexpr void me::vector<T, A>::erase(Iterator pos)
 {
   erase(pos, pos + 1);
 }
 
-template<typename T>
-constexpr void me::vector<T>::clear()
+template<typename T, class A>
+constexpr void me::vector<T, A>::clear()
 {
   for (Iterator i = begin_; i != end_; i++)
-    alloc_->destruct(i);
+    Alloc::destruct(i);
   end_ = begin_;
 }
 
-template<typename T>
-constexpr bool me::vector<T>::contains(const Type &value) const
+template<typename T, class A>
+constexpr bool me::vector<T, A>::contains(const Type &value) const
 {
   for (Iterator i = begin_; i != end_; i++)
   {
@@ -470,8 +455,8 @@ constexpr bool me::vector<T>::contains(const Type &value) const
   return false;
 }
 
-template<typename T>
-constexpr me::size_t me::vector<T>::count(const Type &value) const
+template<typename T, class A>
+constexpr me::size_t me::vector<T, A>::count(const Type &value) const
 {
   Size count = 0;
   for (Iterator i = begin_; i != end_; i++)
@@ -482,58 +467,59 @@ constexpr me::size_t me::vector<T>::count(const Type &value) const
   return count;
 }
 
-template<typename T>
-constexpr T& me::vector<T>::at(Size pos)
+template<typename T, class A>
+constexpr T& me::vector<T, A>::at(Size pos)
 {
   if (pos >= this->size())
     throw exception("me::vector::at(%lu): out of range %lu > %lu", pos, pos, this->size());
   return begin_[pos];
 }
 
-template<typename T>
-constexpr const T& me::vector<T>::at(Size pos) const
+template<typename T, class A>
+constexpr const T& me::vector<T, A>::at(Size pos) const
 {
   if (pos >= this->size())
     throw exception("me::vector::at(%lu): out of range %lu > %lu", pos, pos, this->size());
   return begin_[pos];
 }
 
-template<typename T>
-constexpr me::size_t me::vector<T>::capacity() const
+template<typename T, class A>
+constexpr me::size_t me::vector<T, A>::capacity() const
 {
   return capacity_ - begin_;
 }
 
-template<typename T>
-constexpr me::size_t me::vector<T>::size() const
+template<typename T, class A>
+constexpr me::size_t me::vector<T, A>::size() const
 {
   return end_ - begin_;
 }
 
-template<typename T>
-constexpr bool me::vector<T>::is_empty() const
+template<typename T, class A>
+constexpr bool me::vector<T, A>::is_empty() const
 {
   return this->size() == 0;
 }
 
-template<typename T>
-constexpr T& me::vector<T>::operator[](Size pos)
+template<typename T, class A>
+constexpr T& me::vector<T, A>::operator[](Size pos)
 {
   if (pos >= this->size())
     throw exception("me::vector::operator[](%lu): out of range %lu > %lu", pos, pos, this->size());
   return begin_[pos];
 }
 
-template<typename T>
-constexpr const T& me::vector<T>::operator[](Size pos) const
+template<typename T, class A>
+constexpr const T& me::vector<T, A>::operator[](Size pos) const
 {
   if (pos >= this->size())
     throw exception("me::vector::operator[](%lu): out of range %lu > %lu", pos, pos, this->size());
   return begin_[pos];
 }
 
-template<typename T>
-constexpr bool me::vector<T>::operator==(const vector<T> &vec) const
+template<typename T, class A>
+template<class A2>
+constexpr bool me::vector<T, A>::operator==(const vector<T, A2> &vec) const
 {
   if (vec.size() != this->size())
     return false;
@@ -545,8 +531,9 @@ constexpr bool me::vector<T>::operator==(const vector<T> &vec) const
   return true;
 }
 
-template<typename T>
-constexpr bool me::vector<T>::operator!=(const vector<T> &vec) const
+template<typename T, class A>
+template<class A2>
+constexpr bool me::vector<T, A>::operator!=(const vector<T, A2> &vec) const
 {
   if (vec.size() == 0 && this->size() == 0)
     return false;
@@ -555,36 +542,33 @@ constexpr bool me::vector<T>::operator!=(const vector<T> &vec) const
   return !operator==(vec);
 }
 
-template<typename T>
-constexpr me::vector<T>& me::vector<T>::operator=(const vector<T> &vec)
+template<typename T, class A>
+constexpr me::vector<T, A>& me::vector<T, A>::operator=(const vector<T, A> &vec)
 {
   Size len = vec.size();
 
-  alloc_ = vec.alloc_;
-  begin_ = (Iterator) alloc_->malloc(len * sizeof(Type));
+  begin_ = (Iterator) Alloc::template malloc<Type>(len * sizeof(Type));
   end_ = begin_ + len;
   capacity_ = end_;
   memory::safe_copy<Type>(begin_, vec.begin_, vec.end_);
   return *this;
 }
 
-template<typename T>
-constexpr me::vector<T>& me::vector<T>::operator=(vector<T> &&vec)
+template<typename T, class A>
+constexpr me::vector<T, A>& me::vector<T, A>::operator=(vector<T, A> &&vec)
 {
   begin_ = static_cast<vector<T>&&>(vec).begin_;
   end_ = static_cast<vector<T>&&>(vec).end_;
   capacity_ = static_cast<vector<T>&&>(vec).capacity_;
-  alloc_ = static_cast<vector<T>&&>(vec).alloc_;
   return *this;
 }
 
-template<typename T>
-constexpr me::vector<T>& me::vector<T>::operator=(std::initializer_list<T> elements)
+template<typename T, class A>
+constexpr me::vector<T, A>& me::vector<T, A>::operator=(std::initializer_list<T> elements)
 {
   Const_Iterator _iter = elements.begin();
 
-  alloc_ = Alloc_Type::_default();
-  begin_ = (Iterator) alloc_->malloc(elements.size() * sizeof(Type));
+  begin_ = (Iterator) Alloc::template malloc<Type>(elements.size() * sizeof(Type));
   end_ = begin_ + elements.size();
   capacity_ = end_;
   for (Iterator i = begin_; i != end_; i++)

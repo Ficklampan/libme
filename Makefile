@@ -11,7 +11,7 @@ C_CFLAGS = $(CFLAGS) -xc
 CXX_CFLAGS = $(CFLAGS) -xc++ -g -Wall -Wextra -std=c++20
 OBJC_CFLAGS = $(CFLAGS) -xobjc 
 LFLAGS = $(LIBD) $(LIBS) 
-SRCS = ./src/memory.cpp \
+SRCS = \
 	./src/filesystem.cpp
 OBJS = $(SRCS:%=$(BUILD)/%.o)
 DEPS = $(OBJS:%.o=%.d)

@@ -24,7 +24,7 @@ namespace me::filesystem {
   typedef uint64_t _block_count_type;
   typedef uint64_t _time_type;
 
-  typedef me::string_view _path_type;
+  typedef me::string_view path_type;
 
   enum file_type : uint8_t {
     FILE_TYPE_DIRECTORY,
@@ -82,32 +82,30 @@ namespace me::filesystem {
 
   };
 
-  bool exists(const _path_type &_path);
+  bool exists(const path_type &_path);
 
-  void create_file(const _path_type &_path);
-  void make_directory(const _path_type &_path, uint16_t _mode = 0);
-  void make_directories(const _path_type &_path);
+  void create_file(const path_type &_path);
+  void make_directory(const path_type &_path, uint16_t _mode = 0);
+  void make_directories(const path_type &_path);
 
-  void status(const _path_type &_path, file_status &_status);
-  void enumerate_entries(const _path_type &_path, size_t &_count, directory_entry* _entries, uint8_t _options = 0);
+  void status(const path_type &_path, file_status &_status);
+  void enumerate_entries(const path_type &_path, size_t &_count, directory_entry* _entries, uint8_t _options = 0);
 
-  void change_extension(const _path_type &_path, char* _str);
-  void change_name(const _path_type &_path, char* _str);
+  void change_extension(const path_type &path, char* buffer);
+  void change_name(const path_type &path, char* buffer);
+  void extension(const path_type &path, char* buffer);
+  void directory(const path_type &path, char* buffer);
+  void name(const path_type &path, char* buffer);
+  void absolute(const path_type &path, char* buffer);
+  void canonical(const path_type &path, char* buffer);
+  void relative(const path_type &path, char* buffer);
 
-  void extension(const _path_type &_path, char* _str);
-  void directory(const _path_type &_path, char* _str);
-  void name(const _path_type &_path, char* _str);
+  void move(const path_type &src, const path_type &dest, size_t buff_size = 4096, uint8_t options = 0);
+  void copy(const path_type &src, const path_type &dest, size_t buff_size = 4096, uint8_t options = 0);
+  void remove(const path_type &path);
 
-  void absolute(const _path_type &_path, char* _str);
-  void canonical(const _path_type &_path, char* _str);
-  void relative(const _path_type &_path, char* _str);
-
-  void move(const _path_type &_src, const _path_type &_dest, size_t _buff_size = 4096, uint8_t _options = 0);
-  void copy(const _path_type &_src, const _path_type &_dest, size_t _buff_size = 4096, uint8_t _options = 0);
-  void remove(const _path_type &_path);
-
-  void read(const _path_type &_path, size_t _len, void* _data);
-  void write(const _path_type &_path, size_t _len, void* _data);
+  void read(const path_type &path, size_t len, void* data);
+  void write(const path_type &path, size_t len, void* data);
 
 }
 

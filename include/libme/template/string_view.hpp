@@ -9,7 +9,7 @@
 
 namespace me {
 
-  template<typename T>
+  template<typename T, class A>
   class string_t;
 
   template<typename T>
@@ -33,7 +33,7 @@ namespace me {
     constexpr string_view_t(Const_Iterator str, Size len);
     constexpr string_view_t(Const_Iterator begin, Const_Iterator end);
     constexpr string_view_t(Const_Iterator str);
-    constexpr string_view_t(const string_t<T> &str);
+    template<class A> constexpr string_view_t(const string_t<T, A> &str);
     constexpr string_view_t(const string_view_t<T> &copy);
     constexpr string_view_t(string_view_t<T> &&move);
     constexpr string_view_t();
@@ -46,14 +46,18 @@ namespace me {
 
     template<typename I> [[nodiscard]] constexpr I as_int(Size off = 0, int base = 10) const;
     template<bool Seek> constexpr void split(Type delimiter, Size &len, string_view_t<T>* strs) const;
-    [[nodiscard]] constexpr bool starts_with(const string_view_t &str) const;
-    [[nodiscard]] constexpr bool ends_with(const string_view_t &str) const;
+    [[nodiscard]] constexpr bool equals(const string_view_t<T> &str) const;
+    [[nodiscard]] constexpr bool equals_ignore_case(const string_view_t<T> &str) const;
+    [[nodiscard]] constexpr bool starts_with(const string_view_t<T> &str) const;
+    [[nodiscard]] constexpr bool ends_with(const string_view_t<T> &str) const;
+    [[nodiscard]] constexpr bool starts_with_ignore_case(const string_view_t<T> &str) const;
+    [[nodiscard]] constexpr bool ends_with_ignore_case(const string_view_t<T> &str) const;
     [[nodiscard]] constexpr Size find(Type chr, Size off = 0) const;
     [[nodiscard]] constexpr Size rfind(Type chr, Size off = 0) const;
-    [[nodiscard]] constexpr Size find(const string_view_t &str, Size off = 0) const;
-    [[nodiscard]] constexpr Size rfind(const string_view_t &str, Size off = 0) const;
-    [[nodiscard]] constexpr string_view_t substr(Size begin, Size end) const;
-    [[nodiscard]] constexpr string_view_t substr(Size begin) const;
+    [[nodiscard]] constexpr Size find(const string_view_t<T> &str, Size off = 0) const;
+    [[nodiscard]] constexpr Size rfind(const string_view_t<T> &str, Size off = 0) const;
+    [[nodiscard]] constexpr string_view_t<T> substr(Size begin, Size end) const;
+    [[nodiscard]] constexpr string_view_t<T> substr(Size begin) const;
     constexpr void copy(Size off, Size len, Iterator dst) const;
 
     constexpr Iterator c_str(Iterator str, Size off) const;
@@ -64,11 +68,11 @@ namespace me {
 
     [[nodiscard]] constexpr Type operator[](Size pos) const;
 
-    [[nodiscard]] constexpr bool operator==(const string_view_t &_str) const;
+    [[nodiscard]] constexpr bool operator==(const string_view_t<T> &_str) const;
     [[nodiscard]] constexpr bool operator==(Const_Iterator _str) const;
 
-    constexpr string_view_t& operator=(const string_view_t &copy);
-    constexpr string_view_t& operator=(string_view_t &&move);
+    constexpr string_view_t& operator=(const string_view_t<T> &copy);
+    constexpr string_view_t& operator=(string_view_t<T> &&move);
     constexpr string_view_t& operator=(Const_Iterator str);
 
   };
@@ -101,7 +105,8 @@ constexpr me::string_view_t<T>::string_view_t(Const_Iterator str)
 }
 
 template<typename T>
-constexpr me::string_view_t<T>::string_view_t(const string_t<T> &str)
+template<class A>
+constexpr me::string_view_t<T>::string_view_t(const string_t<T, A> &str)
   : begin_(str.begin()), end_(str.end())
 {
 }
@@ -184,6 +189,40 @@ constexpr void me::string_view_t<T>::split(Type delimiter, Size &len, string_vie
 }
 
 template<typename T>
+constexpr bool me::string_view_t<T>::equals(const string_view_t<T> &str) const
+{
+  if (this->size() != str.size())
+    return false;
+
+  Const_Iterator iter1 = this->begin();
+  Const_Iterator iter2 = str.begin();
+
+  while (iter1 != this->end())
+  {
+    if (*iter1++ != *iter2++)
+      return false;
+  }
+  return true;
+}
+
+template<typename T>
+constexpr bool me::string_view_t<T>::equals_ignore_case(const string_view_t<T> &str) const
+{
+  if (this->size() != str.size())
+    return false;
+
+  Const_Iterator iter1 = this->begin();
+  Const_Iterator iter2 = str.begin();
+
+  while (iter1 != this->end())
+  {
+    if (uppercase(*iter1++) != uppercase(*iter2++))
+      return false;
+  }
+  return true;
+}
+
+template<typename T>
 constexpr bool me::string_view_t<T>::starts_with(const string_view_t &str) const
 {
   return this->size() >= str.size() && ::memcmp(begin_, str.begin(), str.size()) == 0;
@@ -193,6 +232,38 @@ template<typename T>
 constexpr bool me::string_view_t<T>::ends_with(const string_view_t &str) const
 {
   return this->size() >= str.size() && ::memcmp(end_ - str.size(), str.begin(), str.size()) == 0;
+}
+
+template<typename T>
+constexpr bool me::string_view_t<T>::starts_with_ignore_case(const string_view_t &str) const
+{
+  if (this->size() < str.size())
+    return false;
+
+  Const_Iterator iter1 = this->begin();
+  Const_Iterator iter2 = str.begin();
+  while (iter2 != str.end())
+  {
+    if (uppercase(*iter1++) != uppercase(*iter2++))
+      return false;
+  }
+  return true;
+}
+
+template<typename T>
+constexpr bool me::string_view_t<T>::ends_with_ignore_case(const string_view_t &str) const
+{
+  if (this->size() < str.size())
+    return false;
+
+  Const_Iterator iter1 = this->end() - str.size();
+  Const_Iterator iter2 = str.begin();
+  while (iter2 != str.end())
+  {
+    if (uppercase(*iter1++) != uppercase(*iter2++))
+      return false;
+  }
+  return true;
 }
 
 template<typename T>

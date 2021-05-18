@@ -5,154 +5,154 @@
 
 namespace me {
 
-  template<typename T>
+  template<typename T, class A = allocator>
   class shared_ptr {
 
   private:
 
-    typedef allocator _Alloc_Type;
-    typedef size_t _Size;
-    typedef size_t* _Counter;
-    typedef T _Type;
-    typedef T* _Pointer;
+    typedef allocator Alloc;
+    typedef size_t Size;
+    typedef size_t* Counter;
+    typedef T Type;
+    typedef T* Pointer;
 
-    mutable _Counter _counter;
-    _Pointer _pointer;
+    mutable Counter counter_;
+    Pointer pointer_;
 
   public:
 
-    shared_ptr(_Counter _counter, _Pointer _pointer);
-    shared_ptr(const shared_ptr &_copy);
-    shared_ptr(shared_ptr &&_move);
+    shared_ptr(Counter counter, Pointer pointer);
+    shared_ptr(const shared_ptr<T, A> &copy);
+    shared_ptr(shared_ptr<T, A> &&move);
     shared_ptr();
     ~shared_ptr();
 
     [[nodiscard]] bool is_valid() const;
 
-    [[nodiscard]] _Size ref_count() const;
-    [[nodiscard]] _Pointer get_ptr() const;
+    [[nodiscard]] Size ref_count() const;
+    [[nodiscard]] Pointer get_ptr() const;
 
-    void reset(_Pointer _pointer);
+    void reset(Pointer pointer);
 
-    _Pointer operator->() const;
+    Pointer operator->() const;
 
-    shared_ptr& operator=(const shared_ptr &_copy);
-    shared_ptr& operator=(shared_ptr &&_move);
+    shared_ptr<T, A>& operator=(const shared_ptr &copy);
+    shared_ptr<T, A>& operator=(shared_ptr &&move);
 
-    template<typename... A>
-    [[nodiscard]] static shared_ptr make(A&&... _args, _Alloc_Type* _alloc = _Alloc_Type::_default());
+    template<typename... Args>
+    [[nodiscard]] static shared_ptr make(Args&&... args);
 
-    [[nodiscard]] static shared_ptr make(T &&_value, _Alloc_Type* _alloc = _Alloc_Type::_default());
-    [[nodiscard]] static shared_ptr make(T* _value, _Alloc_Type* _alloc = _Alloc_Type::_default());
+    [[nodiscard]] static shared_ptr make(Type &&value);
+    [[nodiscard]] static shared_ptr make(Type* value);
 
   };
 
 }
 
-template<typename T>
-me::shared_ptr<T>::shared_ptr(_Counter _counter, _Pointer _pointer)
-  : _counter(_counter), _pointer(_pointer)
+template<typename T, class A>
+me::shared_ptr<T, A>::shared_ptr(Counter counter, Pointer pointer)
+  : counter_(counter), pointer_(pointer)
 {
 }
 
-template<typename T>
-me::shared_ptr<T>::shared_ptr(const shared_ptr &_copy)
+template<typename T, class A>
+me::shared_ptr<T, A>::shared_ptr(const shared_ptr<T, A> &copy)
 {
-  *_copy._count++;
+  *copy.counter_++;
 
-  this->_counter = _copy._counter;
-  this->_pointer = _copy._pointer;
+  counter_ = copy.counter_;
+  pointer_ = copy.pointer_;
 }
 
-template<typename T>
-me::shared_ptr<T>::shared_ptr(shared_ptr &&_move)
+template<typename T, class A>
+me::shared_ptr<T, A>::shared_ptr(shared_ptr<T, A> &&move)
 {
-  *_move._counter++;
+  *move.counter_++;
 
-  this->_counter = _move._count;
-  this->_pointer = _move._ptr;
+  counter_ = move.counter__;
+  pointer_ = move.pointer_;
 }
 
-template<typename T>
-me::shared_ptr<T>::shared_ptr()
+template<typename T, class A>
+me::shared_ptr<T, A>::shared_ptr()
 {
-  this->_counter = nullptr;
+  counter_ = nullptr;
 }
 
-template<typename T>
-me::shared_ptr<T>::~shared_ptr()
+template<typename T, class A>
+me::shared_ptr<T, A>::~shared_ptr()
 {
-  *this->_counter--;
+  *counter_ -= 1;
 
-  if (*this->_counter == 0)
-    delete this->_pointer;
+  if (*counter_ == 0)
+    Alloc::free(pointer_);
 }
 
-template<typename T>
-bool me::shared_ptr<T>::is_valid() const
+template<typename T, class A>
+bool me::shared_ptr<T, A>::is_valid() const
 {
-  return this->_counter != nullptr;
+  return counter_ != nullptr;
 }
 
-template<typename T>
-me::size_t me::shared_ptr<T>::ref_count() const
+template<typename T, class A>
+me::size_t me::shared_ptr<T, A>::ref_count() const
 {
-  return *this->_counter;
+  return *counter_;
 }
 
-template<typename T>
-T* me::shared_ptr<T>::get_ptr() const
+template<typename T, class A>
+T* me::shared_ptr<T, A>::get_ptr() const
 {
-  return this->_pointer;
+  return pointer_;
 }
 
-template<typename T>
-void me::shared_ptr<T>::reset(_Pointer _pointer)
+template<typename T, class A>
+void me::shared_ptr<T, A>::reset(Pointer pointer)
 {
-  this->_pointer = _pointer;
+  pointer_ = pointer;
 }
 
-template<typename T>
-T* me::shared_ptr<T>::operator->() const
+template<typename T, class A>
+T* me::shared_ptr<T, A>::operator->() const
 {
-  return this->_pointer;
+  return pointer_;
 }
 
-template<typename T>
-me::shared_ptr<T>& me::shared_ptr<T>::operator=(const shared_ptr<T> &_copy)
+template<typename T, class A>
+me::shared_ptr<T, A>& me::shared_ptr<T, A>::operator=(const shared_ptr<T, A> &copy)
 {
-  this->_counter = _copy._counter;
-  this->_pointer = _copy._pointer;
-  *this->_counter++;
+  counter_ = copy.counter_;
+  pointer_ = copy.pointer_;
+  *counter_ += 1;
   return *this;
 }
 
-template<typename T>
-me::shared_ptr<T>& me::shared_ptr<T>::operator=(shared_ptr<T> &&_move)
+template<typename T, class A>
+me::shared_ptr<T, A>& me::shared_ptr<T, A>::operator=(shared_ptr<T, A> &&move)
 {
-  this->_counter = _move._counter;
-  this->_pointer = _move._pointer;
-  *this->_counter++;
+  counter_ = move.counter_;
+  pointer_ = move.pointer_;
+  *counter_ += 1;
   return *this;
 }
 
-template<typename T>
-template<typename... A>
-me::shared_ptr<T> me::shared_ptr<T>::make(A&&... _args, _Alloc_Type* _alloc)
+template<typename T, class A>
+template<typename... Args>
+me::shared_ptr<T, A> me::shared_ptr<T, A>::make(Args&&... args)
 {
-  return shared_ptr(_alloc->calloc<_Size>(1), _alloc->calloc<_Type>(static_cast<A&&>(_args)...));
+  return shared_ptr<T, A>(Alloc::calloc<Size>(1), Alloc::calloc<Type>(static_cast<Args&&>(args)...));
 }
 
-template<typename T>
-me::shared_ptr<T> me::shared_ptr<T>::make(T &&_value, _Alloc_Type* _alloc)
+template<typename T, class A>
+me::shared_ptr<T, A> me::shared_ptr<T, A>::make(Type &&value)
 {
-  return shared_ptr(_alloc->calloc<_Size>(1), _alloc->calloc<_Type>(static_cast<T&&>(_value)));
+  return shared_ptr<T, A>(Alloc::calloc<Size>(1), Alloc::calloc<Type>(static_cast<Type&&>(value)));
 }
 
-template<typename T>
-me::shared_ptr<T> me::shared_ptr<T>::make(T* _value, _Alloc_Type* _alloc)
+template<typename T, class A>
+me::shared_ptr<T, A> me::shared_ptr<T, A>::make(Type* value)
 {
-  return shared_ptr(_alloc->calloc<_Size>(1), _value);
+  return shared_ptr<T, A>(Alloc::calloc<Size>(1), value);
 }
 
 #endif

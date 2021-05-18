@@ -11,6 +11,16 @@
 
 namespace me {
 
+  template<typename T>
+  struct arg {
+#ifdef LIBME_STRING_HPP
+    const string_view name;
+#else
+    const char* name;
+#endif
+    const T value;
+  };
+
   template<typename C, typename... A>
   constexpr int format(C* _buffer, const C* _format, const A&... _args);
 
@@ -42,6 +52,7 @@ namespace __me {
     ARG_TYPE_FLOAT,
     ARG_TYPE_DOUBLE,
 
+    ARG_TYPE_ME_ARG,
     ARG_TYPE_ME_STRING,
     ARG_TYPE_ME_STRING_VIEW,
 
@@ -49,172 +60,173 @@ namespace __me {
   };
 
   struct __arg {
-    const void* _ptr;
-    __arg_type _type;
+    const void* ptr;
+    __arg_type type;
   };
 
   template<typename C, typename... A>
-  constexpr int __format(C* _buffer, const C* _format, const A&... _args);
+  constexpr int __format(C* buffer, const C* format, const A&... args);
 
   template<typename T, typename... A>
-  constexpr void __store_args(__arg* _iter, const T &_first, const A&... _args);
+  constexpr void __store_args(__arg* iter, const T &first, const A&... args);
 
   template<typename C>
-  __arg_type __get_arg_type(const C* &_format);
+  __arg_type __get_arg_type(const C* &format);
 
   template<typename T, typename C>
-  void __integer_to_string(T _i, C* &_str, int _flags, int _base) requires std::is_integral_v<T>;
+  void __integer_to_string(T i, C* &str, int flags, int base) requires std::is_integral_v<T>;
 
   template<typename T, typename C>
-  void __float_to_string(T _f, C* &_str, int _flags, int _base) requires std::is_floating_point_v<T>;
+  void __float_to_string(T f, C* &str, int flags, int base) requires std::is_floating_point_v<T>;
 
   template<typename T, typename C>
-  void __number_to_string(T _n, C* &_str, int _flags, int _base);
+  void __number_to_string(T n, C* &str, int flags, int base);
 
   template<typename C>
-  int __string_to_integer(C* &_str);
+  int __string_to_integer(C* &str);
 
 }
 
 /* "This is a test {0%HH:%MM:%SS}" */
 template<typename C, typename... A>
-constexpr int __me::__format(C* _buffer, const C* _format, const A&... _args)
+constexpr int __me::__format(C* buffer, const C* format, const A&... args)
 {
-  constexpr size_t _len = sizeof...(_args);
-  __arg _iter[_len];
-  __store_args(_iter, _args...);
+  constexpr size_t len = sizeof... (args);
+  __arg iter[len];
+  __store_args(iter, args...);
 
-  size_t _index = 0;
+  size_t index = 0;
 
-  const char* _val_str;
+  const char* val_str;
 #ifdef LIBME_STRING_HPP
-  const string* _val_me_str;
-  const string_view* _val_me_str_view;
+  const string* val_me_str;
+  const string_view* val_me_str_view;
 #endif
 
-  int _flags;
-  int _base;
+  int flags;
+  int base;
 
   /* getting options */
-  while (*_format != '\0')
+  while (*format != '\0')
   {
-    if (*_format != '{')
+    if (*format != '{')
     {
-      *_buffer++ = *_format++;
+      *buffer++ = *format++;
       continue;
     }
-      _format++;
+    format++;
 
     /* default */
-    _flags = 0;
-    _base = 10;
+    flags = 0;
+    base = 10;
 
     /* getting index if found */
-    if (isdigit(*_format))
-      _index = __string_to_integer(_format);
+    if (isdigit(*format))
+      index = __string_to_integer(format);
 
     /* getting current argument */
-    const __arg &_arg = _iter[_index];
-    __arg_type _arg_type = _arg._type;
+    const __arg &arg = iter[index];
+    const void* arg_ptr = arg.ptr;
+    __arg_type arg_type = arg.type;
 
     /* getting options */
     do {
 
       /* print number in 16 bit */
-      if (*_format == 'x')
+      if (*format == 'x')
       {
-	_format++;
-	_base = 16;
+	format++;
+	base = 16;
 
       /* print number in 2 bit */
-      }else if (*_format == 'b')
+      }else if (*format == 'b')
       {
-	_format++;
-	_base = 2;
+	format++;
+	base = 2;
 
       /* add special charcters */
-      }else if (*_format == '#')
+      }else if (*format == '#')
       {
-	_format++;
-	_flags |= FORMAT_FLAG_SPECIAL;
+	format++;
+	flags |= FORMAT_FLAG_SPECIAL;
 
       /* specify the type manullay */
-      }else if (*_format == '%')
+      }else if (*format == '%')
       {
-	_format++;
-	_arg_type = __get_arg_type(_format);
+	format++;
+	arg_type = __get_arg_type(format);
       }
 
-    }while (*_format && *_format != '}');
+    }while (*format && *format != '}');
 
-    switch (_arg._type)
+    switch (arg_type)
     {
       /* string */
       case ARG_TYPE_CSTRING:
-        _val_str = *reinterpret_cast<const char* const*>(_arg._ptr);
-        while (*_val_str != '\0')
-          *_buffer++ = *_val_str++;
+        val_str = *reinterpret_cast<const char* const*>(arg_ptr);
+        while (*val_str != '\0')
+          *buffer++ = *val_str++;
         break;
 
       /* char array */
       case ARG_TYPE_CHAR_ARRAY:
-        _val_str = reinterpret_cast<const char*>(_arg._ptr);
-        while (*_val_str != '\0')
-          *_buffer++ = *_val_str++;
+        val_str = reinterpret_cast<const char*>(arg_ptr);
+        while (*val_str != '\0')
+          *buffer++ = *val_str++;
         break;
 
       /* pointer */
       case ARG_TYPE_POINTER:
-	__number_to_string(*reinterpret_cast<const size_t*>(_arg._ptr), _buffer, _flags, 16);
+	__number_to_string(*reinterpret_cast<const size_t*>(arg_ptr), buffer, flags, 16);
 	break;
 
       /* signed integer types */
       case ARG_TYPE_CHAR:
-	__number_to_string(*reinterpret_cast<const char*>(_arg._ptr), _buffer, _flags, _base);
+	__number_to_string(*reinterpret_cast<const char*>(arg_ptr), buffer, flags, base);
 	break;
       case ARG_TYPE_SHORT:
-	__number_to_string(*reinterpret_cast<const short*>(_arg._ptr), _buffer, _flags, _base);
+	__number_to_string(*reinterpret_cast<const short*>(arg_ptr), buffer, flags, base);
 	break;
       case ARG_TYPE_INT:
-	__number_to_string(*reinterpret_cast<const int*>(_arg._ptr), _buffer, _flags, _base);
+	__number_to_string(*reinterpret_cast<const int*>(arg_ptr), buffer, flags, base);
 	break;
       case ARG_TYPE_LONG:
-	__number_to_string(*reinterpret_cast<const long*>(_arg._ptr), _buffer, _flags, _base);
+	__number_to_string(*reinterpret_cast<const long*>(arg_ptr), buffer, flags, base);
 	break;
 
       /* unsigned integer types */
       case ARG_TYPE_UCHAR:
-	__number_to_string(*reinterpret_cast<const unsigned char*>(_arg._ptr), _buffer, _flags, _base);
+	__number_to_string(*reinterpret_cast<const unsigned char*>(arg_ptr), buffer, flags, base);
 	break;
       case ARG_TYPE_USHORT:
-	__number_to_string(*reinterpret_cast<const unsigned short*>(_arg._ptr), _buffer, _flags, _base);
+	__number_to_string(*reinterpret_cast<const unsigned short*>(arg_ptr), buffer, flags, base);
 	break;
       case ARG_TYPE_UINT:
-	__number_to_string(*reinterpret_cast<const unsigned int*>(_arg._ptr), _buffer, _flags, _base);
+	__number_to_string(*reinterpret_cast<const unsigned int*>(arg_ptr), buffer, flags, base);
 	break;
       case ARG_TYPE_ULONG:
-	__number_to_string(*reinterpret_cast<const unsigned long*>(_arg._ptr), _buffer, _flags, _base);
+	__number_to_string(*reinterpret_cast<const unsigned long*>(arg_ptr), buffer, flags, base);
 	break;
 
       /* float types */
       case ARG_TYPE_FLOAT:
-	__number_to_string(*reinterpret_cast<const float*>(_arg._ptr), _buffer, _flags, _base);
+	__number_to_string(*reinterpret_cast<const float*>(arg_ptr), buffer, flags, base);
 	break;
       case ARG_TYPE_DOUBLE:
-	__number_to_string(*reinterpret_cast<const double*>(_arg._ptr), _buffer, _flags, _base);
+	__number_to_string(*reinterpret_cast<const double*>(arg_ptr), buffer, flags, base);
 	break;
 
       /* libme classes */
 #ifdef LIBME_STRING_HPP
       case ARG_TYPE_ME_STRING:
-        _val_me_str = reinterpret_cast<const string*>(_arg._ptr);
-	for (const char* i = _val_me_str->cbegin(); i != _val_me_str->cend(); i++)
-	  *_buffer++ = *i;
+        val_me_str = reinterpret_cast<const string*>(arg_ptr);
+	for (const char* i = val_me_str->cbegin(); i != val_me_str->cend(); i++)
+	  *buffer++ = *i;
 	break;
       case ARG_TYPE_ME_STRING_VIEW:
-        _val_me_str_view = reinterpret_cast<const string_view*>(_arg._ptr);
-	for (const char* i = _val_me_str_view->begin(); i != _val_me_str_view->end(); i++)
-	  *_buffer++ = *i;
+        val_me_str_view = reinterpret_cast<const string_view*>(arg_ptr);
+	for (const char* i = val_me_str_view->begin(); i != val_me_str_view->end(); i++)
+	  *buffer++ = *i;
 	break;
 #endif
 
@@ -225,18 +237,18 @@ constexpr int __me::__format(C* _buffer, const C* _format, const A&... _args)
         break;
     }
 
-    _format++;
-    _index++;
+    format++;
+    index++;
   }
 
-  *_buffer++ = '\0';
+  *buffer++ = '\0';
   return 0;
 }
 
 template<typename C>
-__me::__arg_type __me::__get_arg_type(const C* &_format)
+__me::__arg_type __me::__get_arg_type(const C* &format)
 {
-  switch (*_format++)
+  switch (*format++)
   {
     case 's':
       return ARG_TYPE_CSTRING;
@@ -247,7 +259,7 @@ __me::__arg_type __me::__get_arg_type(const C* &_format)
 
     /* long types */
     case 'l':
-      switch (*_format++)
+      switch (*format++)
       {
 	case 'i':
 	  return ARG_TYPE_LONG;
@@ -260,7 +272,7 @@ __me::__arg_type __me::__get_arg_type(const C* &_format)
 
     /* short types */
     case 'h':
-      switch (*_format++)
+      switch (*format++)
       {
 	case 'i':
 	  return ARG_TYPE_SHORT;
@@ -282,11 +294,11 @@ __me::__arg_type __me::__get_arg_type(const C* &_format)
 }
 
 template<typename T, typename... A>
-constexpr void __me::__store_args(__arg* _iter, const T &_first, const A&... _args)
+constexpr void __me::__store_args(__arg* iter, const T &first, const A&... args)
 {
   using Tr = std::remove_cvref_t<T>;
 
-  _iter->_ptr = &_first;
+  iter->ptr = &first;
 
   /* array types */
   if (std::is_array<Tr>::value)
@@ -294,168 +306,166 @@ constexpr void __me::__store_args(__arg* _iter, const T &_first, const A&... _ar
     typedef std::remove_extent_t<Tr> Tre;
 
     if (std::is_same<Tre, char>::value)
-      _iter->_type = ARG_TYPE_CHAR_ARRAY;
+      iter->type = ARG_TYPE_CHAR_ARRAY;
 
   /* pointer types */
   }else if (std::is_pointer<Tr>::value)
   {
     if (std::is_same<Tr, char const*>::value)
-      _iter->_type = ARG_TYPE_CSTRING;
+      iter->type = ARG_TYPE_CSTRING;
     else
-      _iter->_type = ARG_TYPE_POINTER;
+      iter->type = ARG_TYPE_POINTER;
 
   /* class types */
   }else if (std::is_class<Tr>::value)
   {
 #ifdef LIBME_STRING_HPP
     if (std::is_same<Tr, string>::value)
-      _iter->_type = ARG_TYPE_ME_STRING;
+      iter->type = ARG_TYPE_ME_STRING;
     else if (std::is_same<Tr, string_view>::value)
-      _iter->_type = ARG_TYPE_ME_STRING_VIEW;
+      iter->type = ARG_TYPE_ME_STRING_VIEW;
 #endif
 
   }else
   {
     /* signed integer */
     if (std::is_same<Tr, char>::value)
-      _iter->_type = ARG_TYPE_CHAR;
+      iter->type = ARG_TYPE_CHAR;
     else if (std::is_same<Tr, short>::value)
-      _iter->_type = ARG_TYPE_SHORT;
+      iter->type = ARG_TYPE_SHORT;
     else if (std::is_same<Tr, int>::value)
-      _iter->_type = ARG_TYPE_INT;
+      iter->type = ARG_TYPE_INT;
     else if (std::is_same<Tr, long>::value)
-      _iter->_type = ARG_TYPE_LONG;
+      iter->type = ARG_TYPE_LONG;
 
     /* unsigned integer */
     else if (std::is_same<Tr, unsigned char>::value)
-      _iter->_type = ARG_TYPE_UCHAR;
+      iter->type = ARG_TYPE_UCHAR;
     else if (std::is_same<Tr, unsigned short>::value)
-      _iter->_type = ARG_TYPE_USHORT;
+      iter->type = ARG_TYPE_USHORT;
     else if (std::is_same<Tr, unsigned int>::value)
-      _iter->_type = ARG_TYPE_UINT;
+      iter->type = ARG_TYPE_UINT;
     else if (std::is_same<Tr, unsigned long>::value)
-      _iter->_type = ARG_TYPE_ULONG;
+      iter->type = ARG_TYPE_ULONG;
 
     /* floating-point */
     else if (std::is_same<Tr, float>::value)
-      _iter->_type = ARG_TYPE_FLOAT;
+      iter->type = ARG_TYPE_FLOAT;
     else if (std::is_same<Tr, double>::value)
-      _iter->_type = ARG_TYPE_DOUBLE;
+      iter->type = ARG_TYPE_DOUBLE;
 
     else
       throw exception("unknown data type '%s'", typeid(Tr).name());
   }
 
-  if constexpr (sizeof...(_args) > 0)
+  if constexpr (sizeof... (args) > 0)
   {
-    _iter++;
-    __store_args(_iter, _args...);
+    iter++;
+    __store_args(iter, args...);
   }
 }
 
 template<typename T, typename C>
-void __me::__integer_to_string(T _i, C* &_str, int _flags, int _base) requires std::is_integral_v<T>
+void __me::__integer_to_string(T i, C* &str, int flags, int base) requires std::is_integral_v<T>
 {
-  static const char* _CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  static const char* CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-  if (_i == 0)
+  if (i == 0)
   {
-    *_str++ = '0';
+    *str++ = '0';
     return;
   }
 
-  C _temp[66];
-  int _index = 0;
-  bool _unsigned;
+  C temp[66];
+  int index = 0;
+  bool unsig;
 
   if constexpr (std::is_signed_v<T>)
   {
-    if (_i < 0)
+    if (i < 0)
     {
-      _unsigned = true;
-      _i = -_i;
+      unsig = true;
+      i = -i;
     }else
-      _unsigned = false;
+      unsig = false;
   }else
-    _unsigned = false;
+    unsig = false;
 
-  while (_i)
+  while (i)
   {
-    T _r = _i % _base;
-    _i = _i / _base;
+    T r = i % base;
+    i = i / base;
 
-    _temp[_index++] = _CHARS[_r];
+    temp[index++] = CHARS[r];
   }
 
-  if (_unsigned)
-    *_str++ = '-';
-  while (_index)
-    *_str++ = _temp[(_index--) - 1];
+  if (unsig)
+    *str++ = '-';
+  while (index)
+    *str++ = temp[(index--) - 1];
 }
 
 template<typename T, typename C>
-void __me::__float_to_string(T _f, C* &_str, int _flags, int _base) requires std::is_floating_point_v<T>
+void __me::__float_to_string(T f, C* &str, int flags, int base) requires std::is_floating_point_v<T>
 {
-  static const char* _CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  static const C _dec_point = '.';
+  static const char* CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  static const C dec_point = '.';
 
-  if (_f == 0)
+  long i1 = static_cast<long>(f);
+  long i2 = static_cast<long>(f - static_cast<T>(i1));
+
+  C temp[128];
+  int index = 0;
+  bool unsig;
+
+  if (i1 < 0)
   {
-    *_str++ = '0';
-    *_str++ = _dec_point;
-    *_str++ = '0';
-    return;
-  }
-
-  long _i1 = static_cast<long>(_f);
-  long _i2 = static_cast<long>(_f - static_cast<T>(_i1));
-
-  C _temp[128];
-  int _index = 0;
-  bool _unsigned;
-
-  if (_i1 < 0)
-  {
-    _unsigned = true;
-    _i1 = -_i1;
+    unsig = true;
+    i1 = -i1;
   }else
-    _unsigned = false;
+    unsig = false;
 
-  while (_i1)
+  if (i1 == 0)
+    temp[index++] = dec_point;
+
+  while (i1)
   {
-    int _r = _i1 % _base;
-    _i1 = _i1 / _base;
-    _temp[_index++] = _CHARS[_r];
+    int r = i1 % base;
+    i1 = i1 / base;
+    temp[index++] = CHARS[r];
   }
 
-  _temp[_index++] = _dec_point;
+  temp[index++] = dec_point;
 
-  while (_i2)
+  if (i2 == 0)
+    temp[index++] = dec_point;
+
+  while (i2)
   {
-    int _r = _i2 % _base;
-    _i2 = _i2 / _base;
-    _temp[_index++] = _CHARS[_r];
+    int r = i2 % base;
+    i2 = i2 / base;
+    temp[index++] = CHARS[r];
   }
 
-  if (_unsigned)
-    *_str++ = '-';
-  while (_index)
-    *_str++ = _temp[(_index--) - 1];
+  if (unsig)
+    *str++ = '-';
+  while (index)
+    *str++ = temp[(index--) - 1];
 }
 
 template<typename T, typename C>
-void __me::__number_to_string(T _n, C* &_str, int _flags, int _base)
+void __me::__number_to_string(T n, C* &str, int flags, int base)
 {
-  if (_flags & FORMAT_FLAG_SPECIAL)
+  if (base == 16 && flags & FORMAT_FLAG_SPECIAL)
   {
-    *_str++ = '0';
-    *_str++ = 'x';
+    *str++ = '0';
+    *str++ = 'x';
   }
 
   if constexpr (std::is_integral_v<T>)
-    __integer_to_string(_n, _str, _flags, _base);
+    __integer_to_string(n, str, flags, base);
   else if constexpr (std::is_floating_point_v<T>)
-    __float_to_string(_n, _str, _flags, _base);
+    __float_to_string(n, str, flags, base);
 }
 
 template<typename C>

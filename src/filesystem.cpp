@@ -32,229 +32,229 @@ static constexpr me::filesystem::file_type _FILE_TYPE_DIRENT[_FILE_TYPE_DIRENT_L
 #define _ME_FILESYSTEM_IS_HIDDEN_FILE(p) ((p)[0] == '.')
 
 
-bool me::filesystem::exists(const _path_type &_path)
+bool me::filesystem::exists(const path_type &path)
 {
-  char _temp[_path.size() + 1];
-  _path.c_str(_temp);
+  char temp[path.size() + 1];
+  path.c_str(temp);
 
-  return ::access(_temp, F_OK) == 0;
+  return ::access(temp, F_OK) == 0;
 }
 
-void me::filesystem::create_file(const _path_type &_path)
+void me::filesystem::create_file(const path_type &path)
 {
-  char _temp[_path.size() + 1];
-  _path.c_str(_temp);
+  char temp[path.size() + 1];
+  path.c_str(temp);
 
-  ::FILE* _file = ::fopen(_temp, "wb");
-  if (!_file)
-    throw exception("me::filesystem::create_file() -> path[%s] %s", _temp, ::strerror(errno));
+  ::FILE* file = ::fopen(temp, "wb");
+  if (!file)
+    throw exception("me::filesystem::create_file() -> path[%s] %s", temp, ::strerror(errno));
 
-  ::fwrite(nullptr, 0, 0, _file);
-  ::fclose(_file);
+  ::fwrite(nullptr, 0, 0, file);
+  ::fclose(file);
 }
 
-void me::filesystem::make_directory(const _path_type &_path, uint16_t _mode)
+void me::filesystem::make_directory(const path_type &path, uint16_t mode)
 {
-  char _temp[_path.size() + 1];
-  _path.c_str(_temp);
+  char temp[path.size() + 1];
+  path.c_str(temp);
 
-  if (::mkdir(_temp, _mode) != 0)
-    throw exception("me::filesystem::make_directory() -> path[%s] %s", _temp, ::strerror(errno));
+  if (::mkdir(temp, mode) != 0)
+    throw exception("me::filesystem::make_directory() -> path[%s] %s", temp, ::strerror(errno));
 }
 
-void me::filesystem::make_directories(const _path_type &_path)
+void me::filesystem::make_directories(const path_type &path)
 {
 }
 
-void me::filesystem::status(const _path_type &_path, file_status &_status)
+void me::filesystem::status(const path_type &path, file_status &status)
 {
-  char _temp[_path.size() + 1];
-  _path.c_str(_temp);
+  char temp[path.size() + 1];
+  path.c_str(temp);
 
-  struct stat _stat;
-  ::stat(_temp, &_stat);
+  struct stat stat;
+  ::stat(temp, &stat);
 
-  _status.device = _stat.st_dev;
-  _status.mode = _stat.st_mode;
-  _status.user_id = _stat.st_uid;
-  _status.group_id = _stat.st_gid;
-  _status.device_id = _stat.st_rdev;
-  _status.device = _stat.st_dev;
-  _status.size = _stat.st_size;
-  _status.block_size = _stat.st_blksize;
-  _status.block_count = _stat.st_blocks;
+  status.device = stat.st_dev;
+  status.mode = stat.st_mode;
+  status.user_id = stat.st_uid;
+  status.group_id = stat.st_gid;
+  status.device_id = stat.st_rdev;
+  status.device = stat.st_dev;
+  status.size = stat.st_size;
+  status.block_size = stat.st_blksize;
+  status.block_count = stat.st_blocks;
 }
 
-void me::filesystem::enumerate_entries(const _path_type &_path, size_t &_count, directory_entry* _entries, uint8_t _options)
+void me::filesystem::enumerate_entries(const path_type &path, size_t &count, directory_entry* entries, uint8_t options)
 {
-  char _temp[_path.size() + 1];
-  _path.c_str(_temp);
+  char temp[path.size() + 1];
+  path.c_str(temp);
 
-  ::DIR* _dir = ::opendir(_temp);
-  if (!_dir)
-    throw exception("me::filesystem::enumerate_entries() -> path[%s] %s", _temp, ::strerror(errno));
+  ::DIR* dir = ::opendir(temp);
+  if (!dir)
+    throw exception("me::filesystem::enumerate_entries() -> path[%s] %s", temp, ::strerror(errno));
 
-  _count = 0;
+  count = 0;
   while (true)
   {
-    ::dirent* _dirent = ::readdir(_dir);
-    if (!_dirent)
+    ::dirent* dirent = ::readdir(dir);
+    if (!dirent)
     {
       if (errno != 0)
-	throw exception("me::filesystem::enumerate_entries() -> path[%s] %s", ::strerror(errno));
+	throw exception("me::filesystem::enumerate_entries() -> path[%s] %s", temp, ::strerror(errno));
       break;
     }
 
-    bool junk = strcmp(".", _dirent->d_name) || strcmp("..", _dirent->d_name);
-    if (!(_options & ENUMERATE_ENTRIES_JUNK) && junk)
+    bool junk = strcmp(".", dirent->d_name) || strcmp("..", dirent->d_name);
+    if (!(options & ENUMERATE_ENTRIES_JUNK) && junk)
       continue;
 
-    if (_options & ENUMERATE_ENTRIES_IGNORE_HIDDEN_FILES && _ME_FILESYSTEM_IS_HIDDEN_FILE(_dirent->d_name))
+    if (options & ENUMERATE_ENTRIES_IGNORE_HIDDEN_FILES && _ME_FILESYSTEM_IS_HIDDEN_FILE(dirent->d_name))
       continue;
 
-    if (!junk && _options & ENUMERATE_ENTRIES_SUB_DIRECTORIES && _dirent->d_type == DT_DIR)
+    if (!junk && options & ENUMERATE_ENTRIES_SUB_DIRECTORIES && dirent->d_type == DT_DIR)
     {
-      enumerate_entries(_path, _count, _entries, _options);
+      enumerate_entries(path, count, entries, options);
       continue;
     }
 
-    if (_entries != nullptr)
+    if (entries != nullptr)
     {
-      directory_entry &_entry = _entries[_count];
-      _entry.type = _FILE_TYPE_DIRENT[_dirent->d_type];
-      memcpy(_entry.name, _dirent->d_name, 256);
+      directory_entry &_entry = entries[count];
+      _entry.type = _FILE_TYPE_DIRENT[dirent->d_type];
+      ::memcpy(_entry.name, dirent->d_name, 256);
     }
-    _count++;
+    count++;
   }
 }
 
-void me::filesystem::change_extension(const _path_type &_path, char* _str)
+void me::filesystem::change_extension(const path_type &path, char* str)
 {
 }
 
-void me::filesystem::change_name(const _path_type &_path, char* _str)
+void me::filesystem::change_name(const path_type &path, char* str)
 {
 }
 
-void me::filesystem::extension(const _path_type &_path, char* _str)
+void me::filesystem::extension(const path_type &path, char* str)
 {
 }
 
-void me::filesystem::directory(const _path_type &_path, char* _str)
+void me::filesystem::directory(const path_type &path, char* str)
 {
-  char _temp[_path.size() + 1];
-  _path.c_str(_temp);
+  char temp[path.size() + 1];
+  path.c_str(temp);
 
-  const char* _iter = _temp;
-  const char* _last = _temp;
-  while (*_iter != '\0') /* TODO: reverse faster? */
+  const char* iter = temp;
+  const char* last = temp;
+  while (*iter != '\0') /* TODO: reverse faster? */
   {
-    if (*_iter == _ME_FILESYSTEM_PATH_SEPARATOR)
-      _last = _iter;
-    _iter++;
+    if (*iter == _ME_FILESYSTEM_PATH_SEPARATOR)
+      last = iter;
+    iter++;
   }
 
-  size_t _len = _last - _temp;
-  if (_len == 0 && _path[0] == _ME_FILESYSTEM_PATH_SEPARATOR)
-    _len = 1;
+  size_t len = last - temp;
+  if (len == 0 && path[0] == _ME_FILESYSTEM_PATH_SEPARATOR)
+    len = 1;
 
-  if (_str != nullptr)
+  if (str != nullptr)
   {
-    for (size_t i = 0; i < _len; i++)
-      _str[i] = _path[i];
+    for (size_t i = 0; i < len; i++)
+      str[i] = path[i];
   }
-  _str[_len] = '\0';
+  str[len] = '\0';
 }
 
-void me::filesystem::name(const _path_type &_path, char* _str)
+void me::filesystem::name(const path_type &path, char* str)
 {
 }
 
-void me::filesystem::absolute(const _path_type &_path, char* _str)
+void me::filesystem::absolute(const path_type &path, char* str)
 {
-  char _temp[_path.size() + 1];
-  _path.c_str(_temp);
+  char _temp[path.size() + 1];
+  path.c_str(_temp);
 
-  ::realpath(_temp, _str);
+  ::realpath(_temp, str);
 }
 
-void me::filesystem::canonical(const _path_type &_path, char* _str)
-{
-}
-
-void me::filesystem::relative(const _path_type &_path, char* _str)
+void me::filesystem::canonical(const path_type &path, char* str)
 {
 }
 
-void me::filesystem::move(const _path_type &_src, const _path_type &_dest, size_t _buff_size, uint8_t _options)
+void me::filesystem::relative(const path_type &path, char* str)
 {
 }
 
-void me::filesystem::copy(const _path_type &_src, const _path_type &_dest, size_t _buff_size, uint8_t _options)
+void me::filesystem::move(const path_type &src, const path_type &dest, size_t buff_size, uint8_t options)
 {
-  char _src_temp[_src.size() + 1];
-  _src.c_str(_src_temp);
-  char _dest_temp[_dest.size() + 1];
-  _dest.c_str(_dest_temp);
+}
 
-  ::FILE* _src_file = ::fopen(_src_temp, "rb");
-  if (!_src_file)
-    throw exception("me::filesystem::copy() -> (source) path[%s] %s", _src_temp, ::strerror(errno));
+void me::filesystem::copy(const path_type &src, const path_type &dest, size_t buff_size, uint8_t options)
+{
+  char src_temp[src.size() + 1];
+  src.c_str(src_temp);
+  char dest_temp[dest.size() + 1];
+  dest.c_str(dest_temp);
 
-  ::FILE* _dest_file = ::fopen(_dest_temp, "ab");
-  if (!_dest_file)
-    throw exception("me::filesystem::copy() -> (destination) path[%s] %s", _dest_temp, ::strerror(errno));
+  ::FILE* src_file = ::fopen(src_temp, "rb");
+  if (!src_file)
+    throw exception("me::filesystem::copy() -> (source) path[%s] %s", src_temp, ::strerror(errno));
 
-  ::fseek(_src_file, 0, SEEK_END);
-  size_t _len = ::ftell(_src_file);
-  ::rewind(_src_file);
+  ::FILE* dest_file = ::fopen(dest_temp, "ab");
+  if (!dest_file)
+    throw exception("me::filesystem::copy() -> (destination) path[%s] %s", dest_temp, ::strerror(errno));
 
-  size_t _pos = 0;
-  char _buffer[_buff_size];
-  while (_pos < _len)
+  ::fseek(src_file, 0, SEEK_END);
+  size_t len = ::ftell(src_file);
+  ::rewind(src_file);
+
+  size_t pos = 0;
+  char buffer[buff_size];
+  while (pos != len)
   {
-    size_t _buffer_size = MIN(_buff_size, _len - _pos);
-    ::fread(_buffer, _buffer_size, 1, _src_file);
-    ::fwrite(_buffer, _buffer_size, 1, _dest_file);
+    size_t buffer_size = MIN(buff_size, len - pos++);
+    ::fread(buffer, buffer_size, 1, src_file);
+    ::fwrite(buffer, buffer_size, 1, dest_file);
   }
 
-  ::fclose(_src_file);
-  ::fclose(_dest_file);
+  ::fclose(src_file);
+  ::fclose(dest_file);
 }
 
-void me::filesystem::remove(const _path_type &_path)
+void me::filesystem::remove(const path_type &path)
 {
-  char _temp[_path.size() + 1];
-  _path.c_str(_temp);
+  char temp[path.size() + 1];
+  path.c_str(temp);
 
-  if (::remove(_temp) != 0)
-    throw exception("me::filesystem::remove() -> path[%s] %s", _temp, ::strerror(errno));
+  if (::remove(temp) != 0)
+    throw exception("me::filesystem::remove() -> path[%s] %s", temp, ::strerror(errno));
 }
 
-void me::filesystem::read(const _path_type &_path, size_t _len, void* _data)
+void me::filesystem::read(const path_type &path, size_t len, void* data)
 {
-  char _temp[_path.size() + 1];
-  _path.c_str(_temp);
+  char _temp[path.size() + 1];
+  path.c_str(_temp);
 
-  ::FILE* _file = ::fopen(_temp, "rb");
-  if (!_file)
+  ::FILE* file = ::fopen(_temp, "rb");
+  if (!file)
     throw exception("me::filesystem::read() -> path[%s] %s", _temp, ::strerror(errno));
 
   /* read file */
-  ::fread(_data, 1, _len, _file);
-  ::fclose(_file);
+  ::fread(data, 1, len, file);
+  ::fclose(file);
 }
 
-void me::filesystem::write(const _path_type &_path, size_t _len, void* _data)
+void me::filesystem::write(const path_type &path, size_t len, void* data)
 {
-  char _temp[_path.size() + 1];
-  _path.c_str(_temp);
+  char temp[path.size() + 1];
+  path.c_str(temp);
 
-  ::FILE* _file = ::fopen(_temp, "wb");
-  if (!_file)
-    throw exception("me::filesystem::write() -> path[%s] %s", _temp, ::strerror(errno));
+  ::FILE* file = ::fopen(temp, "wb");
+  if (!file)
+    throw exception("me::filesystem::write() -> path[%s] %s", temp, ::strerror(errno));
 
   /* write file */
-  ::fwrite(_data, 1, _len, _file);
-  ::fclose(_file);
+  ::fwrite(data, 1, len, file);
+  ::fclose(file);
 }
