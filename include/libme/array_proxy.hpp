@@ -7,7 +7,7 @@
 
 namespace me {
 
-  template<typename T> class vector;
+  template<typename T, class A> class vector;
   template<typename T, size_t Size> class array;
 
   template<typename T>
@@ -28,7 +28,8 @@ namespace me {
 
     array_proxy(_Pointer _pointer, _Size _length);
 
-    array_proxy(const vector<T> &_vec);
+    template<class A>
+    array_proxy(const vector<T, A> &_vec);
 
     template<size_t Size>
     array_proxy(const array<T, Size> &_arr);
@@ -65,7 +66,8 @@ me::array_proxy<T>::array_proxy(_Pointer _pointer, _Size _length)
 }
 
 template<typename T>
-me::array_proxy<T>::array_proxy(const vector<T> &_vec)
+template<class A>
+me::array_proxy<T>::array_proxy(const vector<T, A> &_vec)
   : _pointer(_vec.data()), _length(_vec.size())
 {
 }

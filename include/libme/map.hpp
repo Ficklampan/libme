@@ -7,8 +7,8 @@
 
 namespace me {
 
-  template<typename K, typename V, class A = allocator>
-  class map {
+  template<typename K, typename V, class A = Allocator>
+  class Map {
 
   protected:
 
@@ -16,19 +16,19 @@ namespace me {
     typedef size_t Size;
     typedef K Key;
     typedef V Value;
-    typedef vector<pair<K, V>> Container;
-    typedef const vector<pair<K, V>> Const_Container;
-    typedef pair<K, V>* Iterator;
-    typedef const pair<K, V>* Const_Iterator;
+    typedef Vector<Pair<K, V>> Container;
+    typedef const Vector<Pair<K, V>> Const_Container;
+    typedef Pair<K, V>* Iterator;
+    typedef const Pair<K, V>* Const_Iterator;
 
     Container entries_;
 
   public:
 
-    map(std::initializer_list<me::pair<Key, Value>> elements);
-    map(const map<K, V, A> &copy);
-    map(map<K, V, A> &&move);
-    map();
+    Map(std::initializer_list<me::Pair<Key, Value>> elements);
+    Map(const Map<K, V, A> &copy);
+    Map(Map<K, V, A> &&move);
+    Map();
 
     [[nodiscard]] Iterator data() const;
     [[nodiscard]] Iterator begin() const;
@@ -36,8 +36,8 @@ namespace me {
     [[nodiscard]] Const_Iterator cbegin() const;
     [[nodiscard]] Const_Iterator cend() const;
 
-    pair<Key, Value>& put(const Key &key, Value &&value);
-    pair<Key, Value>& put(const Key &key, const Value &value);
+    Pair<Key, Value>& put(const Key &key, Value &&value);
+    Pair<Key, Value>& put(const Key &key, const Value &value);
 
     void erase(const Key &key);
     void clear();
@@ -56,8 +56,8 @@ namespace me {
 
     Value& operator[](const Key &key);
 
-    template<class A2> [[nodiscard]] bool operator==(const map<K, V, A2> &map) const;
-    template<class A2> [[nodiscard]] bool operator!=(const map<K, V, A2> &map) const;
+    template<class A2> [[nodiscard]] bool operator==(const Map<K, V, A2> &Map) const;
+    template<class A2> [[nodiscard]] bool operator!=(const Map<K, V, A2> &Map) const;
 
   };
 
@@ -66,49 +66,49 @@ namespace me {
 #include "exception.hpp"
 
 template<typename K, typename V, class A>
-me::map<K, V, A>::map(std::initializer_list<me::pair<Key, Value>> elements)
+me::Map<K, V, A>::Map(std::initializer_list<me::Pair<Key, Value>> elements)
   : entries_(elements)
 {
 }
 
 template<typename K, typename V, class A>
-me::map<K, V, A>::map(const map<K, V, A> &copy)
+me::Map<K, V, A>::Map(const Map<K, V, A> &copy)
   : entries_(copy.entries_)
 {
 }
 
 template<typename K, typename V, class A>
-me::map<K, V, A>::map(map<K, V, A> &&move)
+me::Map<K, V, A>::Map(Map<K, V, A> &&move)
   : entries_(move.entries_)
 {
 }
 
 template<typename K, typename V, class A>
-me::map<K, V, A>::map()
+me::Map<K, V, A>::Map()
   : entries_()
 {
 }
 
 template<typename K, typename V, class A>
-me::pair<K, V>* me::map<K, V, A>::data() const
+me::Pair<K, V>* me::Map<K, V, A>::data() const
 {
   return entries_.data();
 }
 
 template<typename K, typename V, class A>
-me::pair<K, V>* me::map<K, V, A>::begin() const
+me::Pair<K, V>* me::Map<K, V, A>::begin() const
 {
   return entries_.begin();
 }
 
 template<typename K, typename V, class A>
-me::pair<K, V>* me::map<K, V, A>::end() const
+me::Pair<K, V>* me::Map<K, V, A>::end() const
 {
   return entries_.end();
 }
 
 template<typename K, typename V, class A>
-me::pair<K, V>& me::map<K, V, A>::put(const Key &key, Value &&value)
+me::Pair<K, V>& me::Map<K, V, A>::put(const Key &key, Value &&value)
 {
   for (Iterator i = entries_.begin(); i != entries_.end(); i++)
   {
@@ -122,7 +122,7 @@ me::pair<K, V>& me::map<K, V, A>::put(const Key &key, Value &&value)
 }
 
 template<typename K, typename V, class A>
-me::pair<K, V>& me::map<K, V, A>::put(const Key &key, const Value &value)
+me::Pair<K, V>& me::Map<K, V, A>::put(const Key &key, const Value &value)
 {
   for (Iterator i = entries_.begin(); i != entries_.end(); i++)
   {
@@ -136,7 +136,7 @@ me::pair<K, V>& me::map<K, V, A>::put(const Key &key, const Value &value)
 }
 
 template<typename K, typename V, class A>
-void me::map<K, V, A>::erase(const Key &key)
+void me::Map<K, V, A>::erase(const Key &key)
 {
   for (Const_Iterator i = entries_.begin(); i != entries_.end(); i++)
   {
@@ -149,13 +149,13 @@ void me::map<K, V, A>::erase(const Key &key)
 }
 
 template<typename K, typename V, class A>
-void me::map<K, V, A>::clear()
+void me::Map<K, V, A>::clear()
 {
   entries_.clear();
 }
 
 template<typename K, typename V, class A>
-me::pair<K, V>* me::map<K, V, A>::find(const Key &key) const
+me::Pair<K, V>* me::Map<K, V, A>::find(const Key &key) const
 {
   for (Iterator i = entries_.begin(); i != entries_.end(); i++)
   {
@@ -166,7 +166,7 @@ me::pair<K, V>* me::map<K, V, A>::find(const Key &key) const
 }
 
 template<typename K, typename V, class A>
-bool me::map<K, V, A>::contains(const Key &key) const
+bool me::Map<K, V, A>::contains(const Key &key) const
 {
   for (Const_Iterator i = entries_.begin(); i != entries_.end(); i++)
   {
@@ -177,7 +177,7 @@ bool me::map<K, V, A>::contains(const Key &key) const
 }
 
 template<typename K, typename V, class A>
-V& me::map<K, V, A>::at(const Key &key)
+V& me::Map<K, V, A>::at(const Key &key)
 {
   for (Iterator i = entries_.begin(); i != entries_.end(); i++)
   {
@@ -185,11 +185,11 @@ V& me::map<K, V, A>::at(const Key &key)
       return i->second;
   }
 
-  throw exception("me::map::at(): key not found");
+  throw RuntimeError("me::Map::at(): key not found");
 }
 
 template<typename K, typename V, class A>
-const V& me::map<K, V, A>::at(const Key &key) const
+const V& me::Map<K, V, A>::at(const Key &key) const
 {
   for (Const_Iterator i = entries_.begin(); i != entries_.end(); i++)
   {
@@ -197,11 +197,11 @@ const V& me::map<K, V, A>::at(const Key &key) const
       return i->second;
   }
 
-  throw exception("me::map::at(): key not found");
+  throw RuntimeError("me::Map::at(): key not found");
 }
 
 template<typename K, typename V, class A>
-V& me::map<K, V, A>::at(const Key &key, Value &default_value)
+V& me::Map<K, V, A>::at(const Key &key, Value &default_value)
 {
   for (Iterator i = entries_.begin(); i != entries_.end(); i++)
   {
@@ -212,7 +212,7 @@ V& me::map<K, V, A>::at(const Key &key, Value &default_value)
 }
 
 template<typename K, typename V, class A>
-const V& me::map<K, V, A>::at(const Key &key, const Value &default_value) const
+const V& me::Map<K, V, A>::at(const Key &key, const Value &default_value) const
 {
   for (Const_Iterator i = entries_.begin(); i != entries_.end(); i++)
   {
@@ -223,25 +223,25 @@ const V& me::map<K, V, A>::at(const Key &key, const Value &default_value) const
 }
 
 template<typename K, typename V, class A>
-me::size_t me::map<K, V, A>::capacity() const
+me::size_t me::Map<K, V, A>::capacity() const
 {
   return entries_.capacity();
 }
 
 template<typename K, typename V, class A>
-me::size_t me::map<K, V, A>::size() const
+me::size_t me::Map<K, V, A>::size() const
 {
   return entries_.size();
 }
 
 template<typename K, typename V, class A>
-bool me::map<K, V, A>::is_empty() const
+bool me::Map<K, V, A>::is_empty() const
 {
   return entries_.is_empty();
 }
 
 template<typename K, typename V, class A>
-V& me::map<K, V, A>::operator[](const Key &key)
+V& me::Map<K, V, A>::operator[](const Key &key)
 {
   for (Iterator i = entries_.begin(); i != entries_.end(); i++)
   {
@@ -253,16 +253,16 @@ V& me::map<K, V, A>::operator[](const Key &key)
 
 template<typename K, typename V, class A>
 template<class A2>
-bool me::map<K, V, A>::operator==(const map<K, V, A2> &map) const
+bool me::Map<K, V, A>::operator==(const Map<K, V, A2> &Map) const
 {
-  return entries_ == map.entries_;
+  return entries_ == Map.entries_;
 }
 
 template<typename K, typename V, class A>
 template<class A2>
-bool me::map<K, V, A>::operator!=(const map<K, V, A2> &map) const
+bool me::Map<K, V, A>::operator!=(const Map<K, V, A2> &Map) const
 {
-  return entries_ != map.entries_;
+  return entries_ != Map.entries_;
 }
 
 #endif

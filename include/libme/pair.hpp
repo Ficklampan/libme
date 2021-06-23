@@ -6,35 +6,39 @@
 namespace me {
 
   template<class T1, class T2>
-  struct pair {
+  struct Pair {
 
-    typedef T1 _First_Type;
-    typedef const T1 _Const_First_Type;
-    typedef T2 _Second_Type;
-    typedef const T2 _Const_Second_Type;
+  protected:
 
-    _First_Type first;
-    _Second_Type second;
+    typedef T1 First_Type;
+    typedef const T1 Const_First_Type;
+    typedef T2 Second_Type;
+    typedef const T2 Const_Second_Type;
 
-    pair(_Const_First_Type &_first, _Const_Second_Type &_second)
-      : first(_first), second(_second)
+  public:
+
+    First_Type first;
+    Second_Type second;
+
+    Pair(Const_First_Type &f, Const_Second_Type &s)
+      : first(f), second(s)
     {
     }
     
-    pair(_First_Type &&first, _Second_Type &&second)
+    Pair(First_Type &&f, Second_Type &&s)
     {
-      this->first = static_cast<_First_Type&&>(first);
-      this->second = static_cast<_Const_Second_Type&&>(second);
+      first = static_cast<First_Type&&>(f);
+      second = static_cast<Const_Second_Type&&>(s);
     }
 
-    bool operator==(const pair &_pair) const
+    bool operator==(const Pair<T1, T2> &pair) const
     {
-      return first == _pair.first && second == _pair.second;
+      return first == pair.first && second == pair.second;
     }
 
-    bool operator!=(const pair &_pair) const
+    bool operator!=(const Pair<T1, T2> &pair) const
     {
-      return !operator==(_pair);
+      return !operator==(pair);
     }
 
   };

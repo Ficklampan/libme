@@ -5,114 +5,137 @@
 
 namespace me {
 
-  template<typename T, size_t Size>
-  class array {
+  template<typename T, size_t Count>
+  class Array {
+
+  protected:
+
+    typedef size_t Size;
+    typedef T* Iterator;
+    typedef const T* Const_Iterator;
+    typedef T Type;
+
+    Type elements_[Count];
 
   public:
 
-    typedef size_t _Length;
-    typedef size_t _Position;
-    typedef T _Type;
-    typedef const T _Const_Type;
-    typedef T* _Elems;
+    [[nodiscard]] Iterator data() const;
+    [[nodiscard]] Iterator begin() const;
+    [[nodiscard]] Iterator end() const;
+    [[nodiscard]] Const_Iterator cbegin() const;
+    [[nodiscard]] Const_Iterator cend() const;
 
-    _Type _elements[Size];
+    void swap(Size src, Size dst);
 
-    [[nodiscard]] _Elems data() const;
-    [[nodiscard]] _Elems begin() const;
-    [[nodiscard]] _Elems end() const;
+    void copy(Size off, Size len, Iterator dst) const;
 
-    void swap(_Position _src, _Position _dst);
+    [[nodiscard]] Type& at(Size pos);
+    [[nodiscard]] const Type& at(Size pos) const;
 
-    void copy(_Position _off, _Length _len, _Elems _dest) const;
+    [[nodiscard]] Size size() const;
 
-    [[nodiscard]] _Type& at(_Position) const;
+    [[nodiscard]] Type& operator[](Size pos);
+    [[nodiscard]] const Type& operator[](Size pos) const;
 
-    [[nodiscard]] size_t size() const;
-
-    [[nodiscard]] _Type& operator[](_Position);
-    [[nodiscard]] _Type& operator[](_Position) const;
-
-    [[nodiscard]] bool operator==(const array<T, Size> &_arr) const;
-    [[nodiscard]] bool operator!=(const array<T, Size> &_arr) const;
+    [[nodiscard]] bool operator==(const Array<T, Count> &arr) const;
+    [[nodiscard]] bool operator!=(const Array<T, Count> &arr) const;
 
   };
 }
 
-template<typename T, me::size_t Size>
-T* me::array<T, Size>::data() const
+template<typename T, me::size_t Count>
+T* me::Array<T, Count>::data() const
 {
-  return _elements;
+  return elements_;
 }
 
-template<typename T, me::size_t Size>
-T* me::array<T, Size>::begin() const
+template<typename T, me::size_t Count>
+T* me::Array<T, Count>::begin() const
 {
-  return _elements;
+  return elements_;
 }
 
-template<typename T, me::size_t Size>
-T* me::array<T, Size>::end() const
+template<typename T, me::size_t Count>
+T* me::Array<T, Count>::end() const
 {
-  return _elements + Size;
+  return elements_ + Count;
 }
 
-template<typename T, me::size_t Size>
-void me::array<T, Size>::swap(_Position _src, _Position _dst)
+template<typename T, me::size_t Count>
+const T* me::Array<T, Count>::cbegin() const
 {
-  _Type &_temp = _elements[_src];
-  _elements[_src] = _elements[_dst];
-  _elements[_dst] = _temp;
+  return elements_;
 }
 
-template<typename T, me::size_t Size>
-void me::array<T, Size>::copy(_Position _off, _Length _len, _Elems _dest) const
+template<typename T, me::size_t Count>
+const T* me::Array<T, Count>::cend() const
 {
-  for (_Position i = 0; i < _len; i++)
-    _dest[i] = _elements[i + _off];
+  return elements_ + Count;
 }
 
-template<typename T, me::size_t Size>
-T& me::array<T, Size>::at(_Position _pos) const
+template<typename T, me::size_t Count>
+void me::Array<T, Count>::swap(Size src, Size dst)
 {
-  return _elements[_pos];
+  Type &temp = elements_[src];
+  elements_[src] = elements_[dst];
+  elements_[dst] = temp;
 }
 
-template<typename T, me::size_t Size>
-me::size_t me::array<T, Size>::size() const
+template<typename T, me::size_t Count>
+void me::Array<T, Count>::copy(Size off, Size len, Iterator dst) const
 {
-  return Size;
+  for (Size i = 0; i != len; i++)
+    dst[i] = elements_[i + off];
 }
 
-template<typename T, me::size_t Size>
-T& me::array<T, Size>::operator[](_Position _pos)
+template<typename T, me::size_t Count>
+T& me::Array<T, Count>::at(Size pos)
 {
-  return _elements[_pos];
+  return elements_[pos];
 }
 
-template<typename T, me::size_t Size>
-T& me::array<T, Size>::operator[](_Position _pos) const
+template<typename T, me::size_t Count>
+const T& me::Array<T, Count>::at(Size pos) const
 {
-  return _elements[_pos];
+  return elements_[pos];
 }
 
-template<typename T, me::size_t Size>
-bool me::array<T, Size>::operator==(const array<T, Size> &_arr) const
+template<typename T, me::size_t Count>
+me::size_t me::Array<T, Count>::size() const
 {
-  for (_Position i = 0; i < Size; i++)
+  return Count;
+}
+
+template<typename T, me::size_t Count>
+T& me::Array<T, Count>::operator[](Size pos)
+{
+  return elements_[pos];
+}
+
+template<typename T, me::size_t Count>
+const T& me::Array<T, Count>::operator[](Size pos) const
+{
+  return elements_[pos];
+}
+
+template<typename T, me::size_t Count>
+bool me::Array<T, Count>::operator==(const Array<T, Count> &arr) const
+{
+  for (Size i = 0; i != Count; i++)
   {
-    if (_arr._elements[i] != _elements[i])
+    if (arr.elements_[i] != elements_[i])
       return false;
   }
   return true;
 }
 
-template<typename T, me::size_t Size>
-bool me::array<T, Size>::operator!=(const array<T, Size> &_arr) const
+template<typename T, me::size_t Count>
+bool me::Array<T, Count>::operator!=(const Array<T, Count> &arr) const
 {
-  if (Size == 0)
+  if (Count == 0)
     return false;
 
-  return _elements[0] != _arr._elements[0];
+  return elements_[0] != arr.elements_[0];
 }
+
 #endif

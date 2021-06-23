@@ -9,11 +9,20 @@
 
 namespace me {
 
+  struct strnum_opts {
+    const char* chars = "0123456789abcdefghijklmnopqrstuvwxyz";
+
+    uint16_t base : 6 {10};
+    uint16_t allign : 2 {1};
+    uint16_t sign : 2 {1};
+    uint16_t special : 1 {0};
+  };
+
   template<typename T, class A>
-  class string_t;
+  class String_T;
 
   template<typename T>
-  class string_view_t;
+  class StringView_T;
 
   template<typename C> [[nodiscard]] constexpr size_t strlen(const C* str);
   template<typename C> [[nodiscard]] constexpr int strcmp(const C* str1, const C* str2);
@@ -22,34 +31,34 @@ namespace me {
   // ---------- INTEGER ---------- //
 
   /* converts a string to a integer */
-  template<typename T, typename C> [[nodiscard]] constexpr T strint(const C* str, int base = 10) requires std::is_integral_v<T>;
-  template<typename T, typename C> [[nodiscard]] constexpr T strint(const C* str, size_t len, int base = 10) requires std::is_integral_v<T>;
+  template<typename T, typename Char> [[nodiscard]] constexpr T strint(const Char* &str, int base = 10) requires std::is_integral_v<T>;
+  template<typename T, typename Char> [[nodiscard]] constexpr T strint(const Char* &str, size_t len, int base = 10) requires std::is_integral_v<T>;
 
   /* creates a integer string from a integer */
-  template<typename T, typename C> constexpr void intstr(T i, C* str, int base = 10) requires std::is_integral_v<T>;
+  template<typename T, typename Char> constexpr void intstr(T i, Char* &str, const strnum_opts &opts) requires std::is_integral_v<T>;
 
 
   // ---------- FLOATING POINT ---------- //
 
   /* converts a string to a float */
-  template<typename T, typename C> [[nodiscard]] constexpr T strfloat(const C* str, int base = 10) requires std::is_floating_point_v<T>;
-  template<typename T, typename C> [[nodiscard]] constexpr T strfloat(const C* str, size_t len, int base = 10) requires std::is_floating_point_v<T>;
+  template<typename T, typename Char> [[nodiscard]] constexpr T strfloat(const Char* &str, int base = 10) requires std::is_floating_point_v<T>;
+  template<typename T, typename Char> [[nodiscard]] constexpr T strfloat(const Char* &str, size_t len, int base = 10) requires std::is_floating_point_v<T>;
 
   /* creates a float string from a float */
-  template<typename T, typename C> constexpr void floatstr(T f, C* str, int base = 10) requires std::is_floating_point_v<T>;
+  template<typename T, typename Char> constexpr void floatstr(T f, Char* &str, const strnum_opts &opts) requires std::is_floating_point_v<T>;
 
 
   /* creates a number string from a number */
-  template<typename T, typename C> constexpr void numstr(T n, C* str, int base = 10);
+  template<typename T, typename Char> constexpr void numstr(T n, Char* &str, const strnum_opts &opts);
 
   // --------- STUFF --------- //
-  template<typename C> [[nodiscard]] constexpr C lowercase(C chr);
-  template<typename C> [[nodiscard]] constexpr C uppercase(C chr);
+  template<typename Char> [[nodiscard]] constexpr Char lowercase(Char chr);
+  template<typename Char> [[nodiscard]] constexpr Char uppercase(Char chr);
 
 }
 
-template<typename C, class A = me::allocator> [[nodiscard]] constexpr me::string_t<C, A> operator+(const me::string_t<C, A> &_str1, const me::string_t<C, A> &_str2);
-template<typename C, class A = me::allocator> [[nodiscard]] constexpr me::string_t<C, A> operator+(const C* _str1, const me::string_t<C, A> &_str2);
+template<typename C, class A = me::Allocator> [[nodiscard]] constexpr me::String_T<C, A> operator+(const me::String_T<C, A> &_str1, const me::String_T<C, A> &_str2);
+template<typename C, class A = me::Allocator> [[nodiscard]] constexpr me::String_T<C, A> operator+(const C* _str1, const me::String_T<C, A> &_str2);
 
 #include "string.hpp"
 #include "string_view.hpp"
@@ -78,120 +87,86 @@ constexpr int me::strcmp(const C* _str1, const C* _str2)
   return 0;
 }
 
-template<typename T, typename C>
-constexpr T me::strint(const C* _str, int _base) requires std::is_integral_v<T>
+template<typename T, typename Char>
+constexpr T me::strint(const Char* &str, int base) requires std::is_integral_v<T>
 {
-  T _i = 0;
+  T i = 0;
 
-  while (isdigit(*_str))
-    _i = _base * _i + *_str++ - '0';
-  return _i;
+  while (isdigit(*str))
+    i = base * i + *str++ - '0';
+  return i;
 }
 
-template<typename T, typename C>
-constexpr T me::strint(const C* _str, size_t _len, int _base) requires std::is_integral_v<T>
+template<typename T, typename Char>
+constexpr T me::strint(const Char* &str, size_t len, int base) requires std::is_integral_v<T>
 {
-  T _i = 0;
+  T i = 0;
 
-  while (_len-- && isdigit(*_str))
-    _i = _base * _i + *_str++ - '0';
-  return _i;
+  while (len-- && isdigit(*str))
+    i = base * i + *str++ - '0';
+  return i;
 }
 
-template<typename T, typename C>
-constexpr void me::intstr(T _i, C* _str, int _base) requires std::is_integral_v<T>
+template<typename T, typename Char>
+constexpr void me::intstr(T i, Char* &str, const strnum_opts &opts) requires std::is_integral_v<T>
 {
-  constexpr const char* _CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  Char temp[66];
+  int index = 0;
+  bool unsign;
 
-  C _temp[66];
-  int _index = 0;
-  bool _unsigned;
+  if (i == 0)
+  {
+    *str++ = '0';
+    return str;
+  }
 
   if constexpr (std::is_signed_v<T>)
   {
-    if (_i < 0)
+    if (i < 0)
     {
-      _unsigned = true;
-      _i = -_i;
+      unsign = true;
+      i = -i;
     }else
-      _unsigned = false;
+      unsign = false;
   }else
-    _unsigned = false;
+    unsign = false;
 
-  while (_i)
+  while (i)
   {
-    T _r = _i % _base;
-    _i = _i / _base;
+    T r = i % opts.base;
+    i = i / opts.base;
 
-    _temp[_index++] = _CHARS[_r];
+    temp[index++] = opts.chars[r];
   }
 
-  if (_unsigned)
-    *_str++ = '-';
-  while (_index)
-    *_str++ = _temp[(_index--) - 1];
+  if (unsign && opts.sign)
+    *str++ = '-';
+  while (index)
+    *str++ = temp[(index--) - 1];
 }
 
-template<typename TF, typename TI, typename C>
-constexpr void __me__floatstr__(TF _f, C* _str, int _base)
+template<typename T, typename Char>
+constexpr void me::floatstr(T f, Char* &str, const strnum_opts &opts) requires std::is_floating_point_v<T>
 {
-  constexpr const char* _CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  typedef long TI;
 
-  TI _i1 = static_cast<TI>(_f);
-  TI _i2 = static_cast<TI>(_f - static_cast<TF>(_i1));
+  Char dec_point = '.';
 
-  C _dec_point = '.';
-  C _temp[128];
-  int _index = 0;
-  bool _unsigned;
+  T i1 = static_cast<TI>(f);
+  T i2 = static_cast<TI>(f - static_cast<T>(i1));
 
-  if (_i1 < 0)
-  {
-    _unsigned = true;
-    _i1 = -_i1;
-  }else
-    _unsigned = false;
-
-  while (_i1)
-  {
-    int _r = _i1 % _base;
-    _i1 = _i1 / _base;
-    _temp[_index++] = _CHARS[_r];
-  }
-
-  _temp[_index++] = _dec_point;
-
-  while (_i2)
-  {
-    int _r = _i2 % _base;
-    _i2 = _i2 / _base;
-    _temp[_index++] = _CHARS[_r];
-  }
-
-  if (_unsigned)
-    *_str++ = '-';
-  while (_index)
-    *_str++ = _temp[(_index--) - 1];
+  str = intstr(i1, str, opts);
+  *str++ = dec_point;
+  intstr(i2, str, opts);
 }
 
-template<typename T, typename C>
-constexpr void me::floatstr(T _f, C* _str, int _base) requires std::is_floating_point_v<T>
-{
-  if constexpr (std::is_same<T, float>::value)
-    __me__floatstr__<T, int, C>(_f, _str, _base);
-  else if constexpr (std::is_same<T, double>::value)
-    __me__floatstr__<T, long, C>(_f, _str, _base);
-  else
-    __me__floatstr__<T, long long, C>(_f, _str, _base);
-}
-
-template<typename T, typename C>
-constexpr void me::numstr(T _n, C* _str, int _base)
+template<typename T, typename Char>
+constexpr void me::numstr(T n, Char* &str, const strnum_opts &opts)
 {
   if constexpr (std::is_integral<T>::value)
-    intstr(_n, _str, _base);
-  else if (std::is_floating_point<T>::value)
-    floatstr(_n, _str, _base);
+    intstr(n, str, opts);
+  else if constexpr (std::is_floating_point<T>::value)
+    floatstr(n, str, opts);
 }
 
 template<typename C>
@@ -211,17 +186,17 @@ constexpr C me::uppercase(C chr)
 }
 
 template<typename C, class A>
-constexpr me::string_t<C, A> operator+(const me::string_t<C, A> &str1, const me::string_t<C, A> &str2)
+constexpr me::String_T<C, A> operator+(const me::String_T<C, A> &str1, const me::String_T<C, A> &str2)
 {
-  me::string_t<C> str = str1;
+  me::String_T<C> str = str1;
   str += str2;
   return str;
 }
 
 template<typename C, class A>
-constexpr me::string_t<C, A> operator+(const C* str1, const me::string_t<C, A> &str2)
+constexpr me::String_T<C, A> operator+(const C* str1, const me::String_T<C, A> &str2)
 {
-  me::string_t<C> str = str1;
+  me::String_T<C> str = str1;
   str += str2;
   return str;
 }

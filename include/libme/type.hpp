@@ -2,6 +2,8 @@
   #define MELIB_TYPE_HPP
 
 #include <ctype.h>
+#include <memory>
+#include <type_traits>
 
 namespace me {
 
@@ -17,8 +19,16 @@ namespace me {
   #define isletter(c) (((c) >= 'A' && (c) <= 'Z') || ((c) >= 'a' && (c) <= 'z'))
 #endif
 
+#ifndef distance
+  #define distance(p1, p2) ((p2) - (p1))
+#endif
+
 #ifndef SIZE_MAX
   #define SIZE_MAX __SIZE_MAX__
+#endif
+
+#ifndef ME_ALWAYS_INLINE
+  #define ME_ALWAYS_INLINE [[gnu::always_inline]]
 #endif
 
   typedef __UINT8_TYPE__ uint8_t;
@@ -37,6 +47,27 @@ namespace me {
   typedef uint32_t uint_t;
 
   typedef __SIZE_TYPE__ size_t;
+
+  static constexpr size_t dynamic_extent = SIZE_MAX;
+
+#define LIBME_ASSERT(t, s)
+
+  template<typename T>
+  constexpr T* to_address(T* ptr)
+  {
+    static_assert(!std::is_function<T>::value);
+    return ptr;
+  }
+
+
+  template<typename T>
+  constexpr T* to_address(const T &val)
+  {
+    if constexpr (requires{std::pointer_traits<T>::to_address(val);})
+      return std::pointer_traits<T>::pointer_to(val);
+    else
+      return val.operator->();
+  }
 
 }
 

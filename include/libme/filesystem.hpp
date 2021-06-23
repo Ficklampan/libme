@@ -24,7 +24,7 @@ namespace me::filesystem {
   typedef uint64_t _block_count_type;
   typedef uint64_t _time_type;
 
-  typedef me::string_view path_type;
+  typedef StringView path_type;
 
   enum file_type : uint8_t {
     FILE_TYPE_DIRECTORY,
@@ -72,6 +72,9 @@ namespace me::filesystem {
     _size_type size;
     _block_size_type block_size;
     _block_count_type block_count;
+    _time_type last_access;
+    _time_type last_modify;
+    _time_type last_status;
 
   };
 

@@ -47,7 +47,7 @@ void me::filesystem::create_file(const path_type &path)
 
   ::FILE* file = ::fopen(temp, "wb");
   if (!file)
-    throw exception("me::filesystem::create_file() -> path[%s] %s", temp, ::strerror(errno));
+    throw RuntimeError("me::filesystem::create_file() -> path[%s] %s", temp, ::strerror(errno));
 
   ::fwrite(nullptr, 0, 0, file);
   ::fclose(file);
@@ -59,7 +59,7 @@ void me::filesystem::make_directory(const path_type &path, uint16_t mode)
   path.c_str(temp);
 
   if (::mkdir(temp, mode) != 0)
-    throw exception("me::filesystem::make_directory() -> path[%s] %s", temp, ::strerror(errno));
+    throw RuntimeError("me::filesystem::make_directory() -> path[%s] %s", temp, ::strerror(errno));
 }
 
 void me::filesystem::make_directories(const path_type &path)
@@ -83,6 +83,9 @@ void me::filesystem::status(const path_type &path, file_status &status)
   status.size = stat.st_size;
   status.block_size = stat.st_blksize;
   status.block_count = stat.st_blocks;
+  status.last_access = stat.st_atime;
+  status.last_modify = stat.st_mtime;
+  status.last_status = stat.st_ctime;
 }
 
 void me::filesystem::enumerate_entries(const path_type &path, size_t &count, directory_entry* entries, uint8_t options)
@@ -92,7 +95,7 @@ void me::filesystem::enumerate_entries(const path_type &path, size_t &count, dir
 
   ::DIR* dir = ::opendir(temp);
   if (!dir)
-    throw exception("me::filesystem::enumerate_entries() -> path[%s] %s", temp, ::strerror(errno));
+    throw RuntimeError("me::filesystem::enumerate_entries() -> path[%s] %s", temp, ::strerror(errno));
 
   count = 0;
   while (true)
@@ -101,7 +104,7 @@ void me::filesystem::enumerate_entries(const path_type &path, size_t &count, dir
     if (!dirent)
     {
       if (errno != 0)
-	throw exception("me::filesystem::enumerate_entries() -> path[%s] %s", temp, ::strerror(errno));
+	throw RuntimeError("me::filesystem::enumerate_entries() -> path[%s] %s", temp, ::strerror(errno));
       break;
     }
 
@@ -199,11 +202,11 @@ void me::filesystem::copy(const path_type &src, const path_type &dest, size_t bu
 
   ::FILE* src_file = ::fopen(src_temp, "rb");
   if (!src_file)
-    throw exception("me::filesystem::copy() -> (source) path[%s] %s", src_temp, ::strerror(errno));
+    throw RuntimeError("me::filesystem::copy() -> (source) path[%s] %s", src_temp, ::strerror(errno));
 
   ::FILE* dest_file = ::fopen(dest_temp, "ab");
   if (!dest_file)
-    throw exception("me::filesystem::copy() -> (destination) path[%s] %s", dest_temp, ::strerror(errno));
+    throw RuntimeError("me::filesystem::copy() -> (destination) path[%s] %s", dest_temp, ::strerror(errno));
 
   ::fseek(src_file, 0, SEEK_END);
   size_t len = ::ftell(src_file);
@@ -228,7 +231,7 @@ void me::filesystem::remove(const path_type &path)
   path.c_str(temp);
 
   if (::remove(temp) != 0)
-    throw exception("me::filesystem::remove() -> path[%s] %s", temp, ::strerror(errno));
+    throw RuntimeError("me::filesystem::remove() -> path[%s] %s", temp, ::strerror(errno));
 }
 
 void me::filesystem::read(const path_type &path, size_t len, void* data)
@@ -238,7 +241,7 @@ void me::filesystem::read(const path_type &path, size_t len, void* data)
 
   ::FILE* file = ::fopen(_temp, "rb");
   if (!file)
-    throw exception("me::filesystem::read() -> path[%s] %s", _temp, ::strerror(errno));
+    throw RuntimeError("me::filesystem::read() -> path[%s] %s", _temp, ::strerror(errno));
 
   /* read file */
   ::fread(data, 1, len, file);
@@ -252,7 +255,7 @@ void me::filesystem::write(const path_type &path, size_t len, void* data)
 
   ::FILE* file = ::fopen(temp, "wb");
   if (!file)
-    throw exception("me::filesystem::write() -> path[%s] %s", temp, ::strerror(errno));
+    throw RuntimeError("me::filesystem::write() -> path[%s] %s", temp, ::strerror(errno));
 
   /* write file */
   ::fwrite(data, 1, len, file);

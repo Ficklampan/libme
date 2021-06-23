@@ -1,4 +1,9 @@
 #include "../../include/libme/format.hpp"
+#include <stdio.h>
+
+//#define NO_TIMER
+
+#ifndef NO_TIMER
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -15,59 +20,67 @@ int test_printf(const char* s, ...)
 }
 
 template<typename... A>
-int test_format(const char* s, A&&... args)
+int test_format(const char* s, const A&... args)
 {
   char temp[1024];
-  me::format(temp, s, static_cast<A&&>(args)...);
+  me::format::print(temp, s, args...);
   return 0;
 }
 
-unsigned long get_ms()
+me::uint64_t get_time()
 {
   struct timeval val;
   gettimeofday(&val, nullptr);
-  return val.tv_usec / 1000L;
+  return val.tv_usec;
 }
 
-int test()
+#endif
+
+inline int test()
 {
+#ifndef NO_TIMER
   const char* printf_str = "Hej jag heter %s och är bättre än %s! %s %s %s %s";
   const char* format_str = "Hej jag heter {} och är bättre än {}! {} {} {} {}";
 
-  int total_tests = 1024 * 1024;
+  int total_tests = 1024;
   int tests;
-  unsigned long start, result;
+  me::uint64_t start;
 
   tests = 0;
-  start = get_ms();
+  start = get_time();
   while (tests++ < total_tests)
     test_printf(printf_str, "Edvin", "dig", "Hejsan", "hoppsan", "blablabla", "bla");
-  result = get_ms() - start;
-  printf("printf took %lu ms\n", result);
+  unsigned long printf_result = get_time() - start;
 
   tests = 0;
-  start = get_ms();
+  start = get_time();
   while (tests++ < total_tests)
     test_format(format_str, "Edvin", "dig", "Hejsan", "hoppsan", "blablabla", "bla");
-  result = get_ms() - start;
-  printf("format took %lu ms\n", result);
+  me::uint64_t format_result = get_time() - start;
 
-  int l = 15;
-  if (result < 200)
-    l++;
-  char temp[1024];
-  me::format(temp, "Jag heter {1} och är {0} år. {2} {3#x}", l, "Edvin", 1.75F, 0xFF);
-  ::printf("[%s]\n", temp);
+  long double amount = static_cast<long double>(printf_result) / static_cast<long double>(format_result);
+
+  printf("printf: %lu, format: %lu\n", printf_result, format_result);
+  printf("format is %Lf%% faster than printf\n", amount);
+
+#endif
   return 0;
 }
 
 int main(int , char** )
 {
-  try {
-    test();
-  }catch (const me::exception &e)
-  {
-    ::printf("error: %s\n", e.get_message());
-  }
+  test();
+
+  char buffer[1024];
+  me::format::print(buffer, "Hello {} and hello {}! :D", "Edvin", "Vilmer");
+  ::printf("string: [%s]\n", buffer);
   return 0;
 }
+
+//int main(int , char** )
+//{
+//  char buffer[1024];
+//  me::format::print(buffer, "Hello {} and hello {}! :D", "Edvin", "Vilmer");
+//  ::printf("string: [%s]\n", buffer);
+//  return 0;
+//}

@@ -10,7 +10,7 @@
 
 namespace me {
 
-  class allocator {
+  class Allocator {
 
   protected:
 
@@ -56,63 +56,63 @@ namespace me {
 }
 
 template<typename T>
-constexpr T* me::allocator::malloc(Size len)
+constexpr T* me::Allocator::malloc(Size len)
 {
   return reinterpret_cast<T*>(::malloc(len * sizeof(T)));
 }
 
 template<typename T>
-constexpr T* me::allocator::realloc(T* ptr, Size len)
+constexpr T* me::Allocator::realloc(T* ptr, Size len)
 {
   return reinterpret_cast<T*>(::realloc(ptr, len * sizeof(T)));
 }
 
 template<typename T>
-constexpr void me::allocator::free(T* ptr)
+constexpr void me::Allocator::free(T* ptr)
 {
   ::free(ptr);
 }
 
 template<typename T, typename... A>
-constexpr T* me::allocator::calloc(A&&... args)
+constexpr T* me::Allocator::calloc(A&&... args)
 {
   T* ptr = reinterpret_cast<T*>(malloc<T>(sizeof(T)));
   return (T*) ::new ((void*) ptr) T(static_cast<A&&>(args)...);
 }
 
 template<typename T>
-constexpr T* me::allocator::alloc(T &&value)
+constexpr T* me::Allocator::alloc(T &&value)
 {
   T* ptr = reinterpret_cast<T*>(malloc<T>(sizeof(T)));
   return (T*) ::new ((void*) ptr) T(static_cast<T&&>(value));
 }
 
 template<typename T>
-constexpr void me::allocator::dealloc(T* ptr) requires std::is_trivially_destructible_v<T>
+constexpr void me::Allocator::dealloc(T* ptr) requires std::is_trivially_destructible_v<T>
 {
   free(ptr);
 }
 
 template<typename T>
-constexpr void me::allocator::dealloc(T* ptr)
+constexpr void me::Allocator::dealloc(T* ptr)
 {
   destruct(ptr);
   free(ptr);
 }
 
 template<typename T, typename... A>
-constexpr T* me::allocator::construct(T* ptr, A&&... args)
+constexpr T* me::Allocator::construct(T* ptr, A&&... args)
 {
   return (T*) ::new ((void*) ptr) T(static_cast<A&&>(args)...);
 }
 
 template<typename T>
-constexpr void me::allocator::destruct(T* ) requires std::is_trivially_destructible_v<T>
+constexpr void me::Allocator::destruct(T* ) requires std::is_trivially_destructible_v<T>
 {
 }
 
 template<typename T>
-constexpr void me::allocator::destruct(T* ptr)
+constexpr void me::Allocator::destruct(T* ptr)
 {
   ptr->~T();
 }

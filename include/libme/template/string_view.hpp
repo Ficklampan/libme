@@ -3,17 +3,12 @@
 
 #define LIBME_STRING_VIEW_VALIDATE 1
 
-#include "../type.hpp"
-
-#include <stdarg.h>
+#include "string_base.hpp"
 
 namespace me {
 
-  template<typename T, class A>
-  class string_t;
-
   template<typename T>
-  class string_view_t {
+  class StringView_T : public StringBase<T> {
 
   protected:
 
@@ -25,40 +20,26 @@ namespace me {
     Const_Iterator begin_; /* first character */
     Const_Iterator end_; /* last character + 1 */
 
+    [[nodiscard]] constexpr Const_Iterator __begin() const override;
+    [[nodiscard]] constexpr Const_Iterator __end() const override;
+    [[nodiscard]] constexpr Size __size() const override;
+
   public:
 
     static constexpr T nullchar = 0;
     static constexpr T npos = ~0;
 
-    constexpr string_view_t(Const_Iterator str, Size len);
-    constexpr string_view_t(Const_Iterator begin, Const_Iterator end);
-    constexpr string_view_t(Const_Iterator str);
-    template<class A> constexpr string_view_t(const string_t<T, A> &str);
-    constexpr string_view_t(const string_view_t<T> &copy);
-    constexpr string_view_t(string_view_t<T> &&move);
-    constexpr string_view_t();
+    constexpr StringView_T(Const_Iterator str, Size len);
+    constexpr StringView_T(Const_Iterator begin, Const_Iterator end);
+    constexpr StringView_T(Const_Iterator str);
+    template<class A> constexpr StringView_T(const String_T<T, A> &str);
+    constexpr StringView_T(const StringView_T<T> &copy);
+    constexpr StringView_T(StringView_T<T> &&move);
+    constexpr StringView_T();
 
     [[nodiscard]] constexpr Const_Iterator data() const;
     [[nodiscard]] constexpr Const_Iterator begin() const;
     [[nodiscard]] constexpr Const_Iterator end() const;
-
-    [[nodiscard]] constexpr Type at(Size pos) const;
-
-    template<typename I> [[nodiscard]] constexpr I as_int(Size off = 0, int base = 10) const;
-    template<bool Seek> constexpr void split(Type delimiter, Size &len, string_view_t<T>* strs) const;
-    [[nodiscard]] constexpr bool equals(const string_view_t<T> &str) const;
-    [[nodiscard]] constexpr bool equals_ignore_case(const string_view_t<T> &str) const;
-    [[nodiscard]] constexpr bool starts_with(const string_view_t<T> &str) const;
-    [[nodiscard]] constexpr bool ends_with(const string_view_t<T> &str) const;
-    [[nodiscard]] constexpr bool starts_with_ignore_case(const string_view_t<T> &str) const;
-    [[nodiscard]] constexpr bool ends_with_ignore_case(const string_view_t<T> &str) const;
-    [[nodiscard]] constexpr Size find(Type chr, Size off = 0) const;
-    [[nodiscard]] constexpr Size rfind(Type chr, Size off = 0) const;
-    [[nodiscard]] constexpr Size find(const string_view_t<T> &str, Size off = 0) const;
-    [[nodiscard]] constexpr Size rfind(const string_view_t<T> &str, Size off = 0) const;
-    [[nodiscard]] constexpr string_view_t<T> substr(Size begin, Size end) const;
-    [[nodiscard]] constexpr string_view_t<T> substr(Size begin) const;
-    constexpr void copy(Size off, Size len, Iterator dst) const;
 
     constexpr Iterator c_str(Iterator str, Size off) const;
     constexpr Iterator c_str(Iterator str) const;
@@ -66,285 +47,108 @@ namespace me {
     [[nodiscard]] constexpr bool is_empty() const;
     [[nodiscard]] constexpr bool is_valid() const;
 
+    [[nodiscard]] constexpr Type at(Size pos) const;
     [[nodiscard]] constexpr Type operator[](Size pos) const;
 
-    [[nodiscard]] constexpr bool operator==(const string_view_t<T> &_str) const;
+    [[nodiscard]] constexpr bool operator==(const StringView_T<T> &_str) const;
     [[nodiscard]] constexpr bool operator==(Const_Iterator _str) const;
 
-    constexpr string_view_t& operator=(const string_view_t<T> &copy);
-    constexpr string_view_t& operator=(string_view_t<T> &&move);
-    constexpr string_view_t& operator=(Const_Iterator str);
+    constexpr StringView_T& operator=(const StringView_T<T> &copy);
+    constexpr StringView_T& operator=(StringView_T<T> &&move);
+    constexpr StringView_T& operator=(Const_Iterator str);
 
   };
 
 }
-inline me::string_view_t<char> operator "" _sv(const char* str, me::size_t len);
+inline me::StringView_T<char> operator "" _sv(const char* str, me::size_t len);
 
 #include "string.hpp"
 #include "string_util.hpp"
-#include "../exception.hpp"
+#include "../format.hpp"
 
 #include <malloc.h>
 
 template<typename T>
-constexpr me::string_view_t<T>::string_view_t(Const_Iterator str, Size len)
+constexpr me::StringView_T<T>::StringView_T(Const_Iterator str, Size len)
   : begin_(str), end_(str + len)
 {
 }
 
 template<typename T>
-constexpr me::string_view_t<T>::string_view_t(Const_Iterator begin, Const_Iterator end)
+constexpr me::StringView_T<T>::StringView_T(Const_Iterator begin, Const_Iterator end)
   : begin_(begin), end_(end)
 {
 }
 
 template<typename T>
-constexpr me::string_view_t<T>::string_view_t(Const_Iterator str)
+constexpr me::StringView_T<T>::StringView_T(Const_Iterator str)
   : begin_(str), end_(str + strlen(str))
 {
 }
 
 template<typename T>
 template<class A>
-constexpr me::string_view_t<T>::string_view_t(const string_t<T, A> &str)
+constexpr me::StringView_T<T>::StringView_T(const String_T<T, A> &str)
   : begin_(str.begin()), end_(str.end())
 {
 }
 
 template<typename T>
-constexpr me::string_view_t<T>::string_view_t(const string_view_t<T> &copy)
+constexpr me::StringView_T<T>::StringView_T(const StringView_T<T> &copy)
   : begin_(copy.begin_), end_(copy.end_)
 {
 }
 
 template<typename T>
-constexpr me::string_view_t<T>::string_view_t(string_view_t<T> &&move)
-  : begin_(static_cast<string_view_t<T>&&>(move).begin_), end_(static_cast<string_view_t<T>&&>(move).end_)
+constexpr me::StringView_T<T>::StringView_T(StringView_T<T> &&move)
+  : begin_(static_cast<StringView_T<T>&&>(move).begin_), end_(static_cast<StringView_T<T>&&>(move).end_)
 {
 }
 
 template<typename T>
-constexpr me::string_view_t<T>::string_view_t()
+constexpr me::StringView_T<T>::StringView_T()
   : begin_(nullptr), end_(nullptr)
 {
 }
 
 template<typename T>
-constexpr const T* me::string_view_t<T>::data() const
+constexpr const T* me::StringView_T<T>::__begin() const
 {
   return begin_;
 }
 
 template<typename T>
-constexpr const T* me::string_view_t<T>::begin() const
-{
-  return begin_;
-}
-
-template<typename T>
-constexpr const T* me::string_view_t<T>::end() const
+constexpr const T* me::StringView_T<T>::__end() const
 {
   return end_;
 }
 
 template<typename T>
-constexpr T me::string_view_t<T>::at(Size pos) const
+constexpr size_t me::StringView_T<T>::__size() const
 {
-  return begin_[pos];
+  return end_ - begin_;
 }
 
 template<typename T>
-template<typename I>
-constexpr I me::string_view_t<T>::as_int(Size off, int base) const
+constexpr const T* me::StringView_T<T>::data() const
 {
-  return strint<I>(begin_ + off, this->size(), base);
+  return begin_;
 }
 
 template<typename T>
-template<bool Seek>
-constexpr void me::string_view_t<T>::split(Type delimiter, Size &len, string_view_t<T>* strs) const
+constexpr const T* me::StringView_T<T>::begin() const
 {
-  if constexpr (Seek)
-  {
-    len = 1;
-    for (Const_Iterator i = begin_; *i != nullchar; i++)
-    {
-      if (*i == delimiter)
-	len++;
-    }
-  }else
-  {
-    Const_Iterator first = begin_;
-    for (Const_Iterator i = begin_; *i != nullchar; i++)
-    {
-      if (*i == delimiter)
-      {
-	*strs++ = string_view_t<T>(first, i);
-	first = i + 1;
-      }
-    }
-
-    *strs++ = string_view_t<T>(first, end_);
-  }
+  return begin_;
 }
 
 template<typename T>
-constexpr bool me::string_view_t<T>::equals(const string_view_t<T> &str) const
+constexpr const T* me::StringView_T<T>::end() const
 {
-  if (this->size() != str.size())
-    return false;
-
-  Const_Iterator iter1 = this->begin();
-  Const_Iterator iter2 = str.begin();
-
-  while (iter1 != this->end())
-  {
-    if (*iter1++ != *iter2++)
-      return false;
-  }
-  return true;
+  return end_;
 }
 
 template<typename T>
-constexpr bool me::string_view_t<T>::equals_ignore_case(const string_view_t<T> &str) const
-{
-  if (this->size() != str.size())
-    return false;
-
-  Const_Iterator iter1 = this->begin();
-  Const_Iterator iter2 = str.begin();
-
-  while (iter1 != this->end())
-  {
-    if (uppercase(*iter1++) != uppercase(*iter2++))
-      return false;
-  }
-  return true;
-}
-
-template<typename T>
-constexpr bool me::string_view_t<T>::starts_with(const string_view_t &str) const
-{
-  return this->size() >= str.size() && ::memcmp(begin_, str.begin(), str.size()) == 0;
-}
-
-template<typename T>
-constexpr bool me::string_view_t<T>::ends_with(const string_view_t &str) const
-{
-  return this->size() >= str.size() && ::memcmp(end_ - str.size(), str.begin(), str.size()) == 0;
-}
-
-template<typename T>
-constexpr bool me::string_view_t<T>::starts_with_ignore_case(const string_view_t &str) const
-{
-  if (this->size() < str.size())
-    return false;
-
-  Const_Iterator iter1 = this->begin();
-  Const_Iterator iter2 = str.begin();
-  while (iter2 != str.end())
-  {
-    if (uppercase(*iter1++) != uppercase(*iter2++))
-      return false;
-  }
-  return true;
-}
-
-template<typename T>
-constexpr bool me::string_view_t<T>::ends_with_ignore_case(const string_view_t &str) const
-{
-  if (this->size() < str.size())
-    return false;
-
-  Const_Iterator iter1 = this->end() - str.size();
-  Const_Iterator iter2 = str.begin();
-  while (iter2 != str.end())
-  {
-    if (uppercase(*iter1++) != uppercase(*iter2++))
-      return false;
-  }
-  return true;
-}
-
-template<typename T>
-constexpr me::size_t me::string_view_t<T>::find(Type chr, Size off) const
-{
-  Const_Iterator iter = begin_ + off;
-  while (iter != end_)
-  {
-    if (*iter == chr)
-      return iter - begin_;
-    iter++;
-  }
-  return npos;
-}
-
-template<typename T>
-constexpr me::size_t me::string_view_t<T>::rfind(Type chr, Size off) const
-{
-  Const_Iterator iter = end_ - 1 - off;
-  while (iter != begin_ + 1)
-  {
-    if (*iter == chr)
-      return iter - begin_;
-    iter--;
-  }
-  return npos;
-}
-
-template<typename T>
-constexpr me::size_t me::string_view_t<T>::find(const string_view_t<T> &str, Size off) const
-{
-  if (this->size() - off < str.size())
-    return npos;
-
-  Const_Iterator iter = begin_ + off;
-  while (iter != end_ - str.size() + 1)
-  {
-    if (::memcmp(iter, str.begin(), str.size()) == 0)
-      return iter - begin_;
-    iter++;
-  }
-  return npos;
-}
-
-template<typename T>
-constexpr me::size_t me::string_view_t<T>::rfind(const string_view_t<T> &str, Size off) const
-{
-  if (this->size() - off < str.size())
-    return npos;
-
-  Const_Iterator iter = end_ - str.size() - off;
-  while (iter != begin_ - 1)
-  {
-    if (::memcmp(iter, str.begin(), str.size()) == 0)
-      return iter - begin_;
-    iter--;
-  }
-  return npos;
-}
-
-template<typename T>
-constexpr me::string_view_t<T> me::string_view_t<T>::substr(Size off, Size end) const
-{
-  return string_view_t<T>(begin_ + off, begin_ + off + end);
-}
-
-template<typename T>
-constexpr me::string_view_t<T> me::string_view_t<T>::substr(Size off) const
-{
-  return string_view_t<T>(begin_ + off, end_);
-}
-
-template<typename T>
-constexpr void me::string_view_t<T>::copy(Size off, Size len, Iterator dst) const
-{
-  for (Size i = 0; i < len; i++)
-    dst[i] = begin_[i + off];
-}
-
-template<typename T>
-constexpr T* me::string_view_t<T>::c_str(Iterator str, Size off) const
+constexpr T* me::StringView_T<T>::c_str(Iterator str, Size off) const
 {
   Size len = this->size() - off;
 
@@ -356,7 +160,7 @@ constexpr T* me::string_view_t<T>::c_str(Iterator str, Size off) const
 }
 
 template<typename T>
-constexpr T* me::string_view_t<T>::c_str(Iterator str) const
+constexpr T* me::StringView_T<T>::c_str(Iterator str) const
 {
   Size len = this->size();
 
@@ -368,31 +172,37 @@ constexpr T* me::string_view_t<T>::c_str(Iterator str) const
 }
 
 template<typename T>
-constexpr me::size_t me::string_view_t<T>::size() const
+constexpr me::size_t me::StringView_T<T>::size() const
 {
   return end_ - begin_;
 }
 
 template<typename T>
-constexpr bool me::string_view_t<T>::is_empty() const
+constexpr bool me::StringView_T<T>::is_empty() const
 {
   return begin_ == end_;
 }
 
 template<typename T>
-constexpr bool me::string_view_t<T>::is_valid() const
+constexpr bool me::StringView_T<T>::is_valid() const
 {
   return begin_ != nullptr;
 }
 
 template<typename T>
-constexpr T me::string_view_t<T>::operator[](Size pos) const
+constexpr T me::StringView_T<T>::at(Size pos) const
+{
+  return begin_[pos];
+}
+
+template<typename T>
+constexpr T me::StringView_T<T>::operator[](Size pos) const
 {
   return this->at(pos);
 }
 
 template<typename T>
-constexpr bool me::string_view_t<T>::operator==(const string_view_t &str) const
+constexpr bool me::StringView_T<T>::operator==(const StringView_T &str) const
 {
   if (str.size() != this->size())
     return false;
@@ -406,7 +216,7 @@ constexpr bool me::string_view_t<T>::operator==(const string_view_t &str) const
 }
 
 template<typename T>
-constexpr bool me::string_view_t<T>::operator==(Const_Iterator str) const
+constexpr bool me::StringView_T<T>::operator==(Const_Iterator str) const
 {
   if (strlen(str) != this->size())
     return false;
@@ -420,7 +230,7 @@ constexpr bool me::string_view_t<T>::operator==(Const_Iterator str) const
 }
 
 template<typename T>
-constexpr me::string_view_t<T>& me::string_view_t<T>::operator=(const string_view_t<T> &str)
+constexpr me::StringView_T<T>& me::StringView_T<T>::operator=(const StringView_T<T> &str)
 {
   begin_ = str.begin_;
   end_ = str.end_;
@@ -428,15 +238,15 @@ constexpr me::string_view_t<T>& me::string_view_t<T>::operator=(const string_vie
 }
 
 template<typename T>
-constexpr me::string_view_t<T>& me::string_view_t<T>::operator=(string_view_t<T> &&str)
+constexpr me::StringView_T<T>& me::StringView_T<T>::operator=(StringView_T<T> &&str)
 {
-  begin_ = static_cast<string_view_t<T>&&>(str).begin_;
-  end_ = static_cast<string_view_t<T>&&>(str).end_;
+  begin_ = static_cast<StringView_T<T>&&>(str).begin_;
+  end_ = static_cast<StringView_T<T>&&>(str).end_;
   return *this;
 }
 
 template<typename T>
-constexpr me::string_view_t<T>& me::string_view_t<T>::operator=(Const_Iterator str)
+constexpr me::StringView_T<T>& me::StringView_T<T>::operator=(Const_Iterator str)
 {
   Size len = strlen(str);
 
@@ -445,9 +255,15 @@ constexpr me::string_view_t<T>& me::string_view_t<T>::operator=(Const_Iterator s
   return *this;
 }
 
-inline me::string_view_t<char> operator "" _sv(const char* str, me::size_t len)
+inline me::StringView_T<char> operator "" _sv(const char* str, me::size_t len)
 {
-  return me::string_view_t<char>(str, len);
+  return me::StringView_T<char>(str, len);
 }
+
+LIBME_NEW_FORMATTER(StringView_T<char>,
+{
+  const StringView_T<char> &str = *reinterpret_cast<const StringView_T<char>*>(value);
+  append_string(buffer, str.data(), str.size());
+})
 
 #endif
